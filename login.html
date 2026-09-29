@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>כניסה | הטיולים שלי</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E✈️%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Suez+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F6; --card:#FFFFFF; --ink:#16223A; --muted:#5B677D; --line:#D3DAE5; --soft:#E4EAF3;
+  --red:#C3313A; --blue:#23479A; --green:#2B8259; --stripe-white:#FFFFFF;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0F1624; --card:#172036; --ink:#E6EBF4; --muted:#9BA7BD; --line:#2A3553; --soft:#1E2944;
+    --red:#E0616A; --blue:#86A5EE; --green:#4FB585; --stripe-white:#172036; }
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Assistant","Arial Hebrew","Segoe UI",Arial,sans-serif;font-size:17px;line-height:1.55}
+main{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.airmail{width:100%;max-width:440px;padding:9px;border-radius:18px;background:repeating-linear-gradient(135deg,var(--red) 0 16px,var(--stripe-white) 16px 24px,var(--blue) 24px 40px,var(--stripe-white) 40px 48px)}
+.card{background:var(--card);border-radius:11px;padding:30px 28px 26px}
+.route{font-family:"Suez One",Georgia,serif;font-size:2.4rem;line-height:1;direction:ltr;text-align:right;display:flex;justify-content:flex-end;gap:14px;align-items:center}
+.route span{color:var(--red);font-size:1.6rem}
+h1{font-family:"Suez One","Assistant",Georgia,serif;font-weight:400;font-size:1.9rem;margin:12px 0 2px}
+.sub{color:var(--muted);margin:0 0 22px}
+.switch{display:flex;border-bottom:1px solid var(--line);margin-bottom:18px}
+.switch button{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:10px 8px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer}
+.switch button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--red)}
+form{display:flex;flex-direction:column;gap:12px}
+form[hidden]{display:none}
+label{display:block;font-size:.88rem;color:var(--muted);margin-bottom:3px}
+input{width:100%;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+input[type="email"]{direction:ltr;text-align:right}
+input:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.btn{font:inherit;font-weight:700;background:var(--ink);color:var(--bg);border:0;border-radius:8px;padding:11px 14px;cursor:pointer;margin-top:4px}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.link{background:none;border:0;padding:0;font:inherit;color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:3px;align-self:flex-start}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.9rem;margin:6px 0 2px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.msg{margin-top:16px;font-size:.95rem;min-height:1.4em}
+.msg.err{color:var(--red)}
+.msg.ok{color:var(--green)}
+.hint{font-size:.85rem;color:var(--muted);margin:-6px 0 0}
+</style>
+</head>
+<body>
+<main>
+  <div class="airmail">
+    <div class="card">
+      <div class="route">TLV <span>✈</span> <b id="dest-code" style="font-weight:400">BCN</b></div>
+      <h1>הטיולים שלי</h1>
+      <p class="sub">מתכננים, מתעדים ומשתפים טיולים עם מי שנוסע איתכם.</p>
+
+      <div class="switch" role="tablist" id="switch">
+        <button role="tab" id="t-login" aria-selected="true" data-show="login">כניסה</button>
+        <button role="tab" id="t-signup" aria-selected="false" data-show="signup">הרשמה</button>
+      </div>
+
+      <form id="f-login" novalidate>
+        <div><label for="l-email">מייל</label><input type="email" id="l-email" autocomplete="email" required></div>
+        <div><label for="l-pass">סיסמה</label><input type="password" id="l-pass" autocomplete="current-password" required></div>
+        <button class="btn" type="submit">כניסה</button>
+        <button class="link" type="button" data-show="forgot">שכחתי את הסיסמה</button>
+      </form>
+
+      <form id="f-signup" hidden novalidate>
+        <div><label for="s-name">שם</label><input type="text" id="s-name" autocomplete="name" required></div>
+        <div><label for="s-email">מייל</label><input type="email" id="s-email" autocomplete="email" required></div>
+        <div><label for="s-pass">סיסמה</label><input type="password" id="s-pass" autocomplete="new-password" minlength="8" required></div>
+        <p class="hint">לפחות 8 תווים.</p>
+        <div><label for="s-pass2">אימות סיסמה</label><input type="password" id="s-pass2" autocomplete="new-password" required></div>
+        <button class="btn" type="submit">הרשמה</button>
+      </form>
+
+      <form id="f-forgot" hidden novalidate>
+        <p class="hint" style="margin:0">נשלח אליכם קישור לבחירת סיסמה חדשה.</p>
+        <div><label for="f-email">מייל</label><input type="email" id="f-email" autocomplete="email" required></div>
+        <button class="btn" type="submit">שליחת קישור</button>
+        <button class="link" type="button" data-show="login">חזרה לכניסה</button>
+      </form>
+
+      <form id="f-reset" hidden novalidate>
+        <p class="hint" style="margin:0">בחרו סיסמה חדשה לחשבון.</p>
+        <div><label for="r-pass">סיסמה חדשה</label><input type="password" id="r-pass" autocomplete="new-password" minlength="8" required></div>
+        <div><label for="r-pass2">אימות סיסמה</label><input type="password" id="r-pass2" autocomplete="new-password" required></div>
+        <button class="btn" type="submit">שמירת הסיסמה</button>
+      </form>
+
+      <div id="google-wrap" hidden>
+        <div class="or">או</div>
+        <button class="btn ghost" type="button" id="google" style="width:100%">כניסה עם Google</button>
+      </div>
+
+      <div class="msg" id="msg" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const CFG = window.TRIP_CONFIG || {};
+  const base = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+  const APP = base + 'index.html', SELF = base + 'login.html';
+  const codes = ['BCN','MAD','FCO','CDG','LHR','AMS','ATH','LIS','VIE','PRG','BUD','JFK'];
+  $('#dest-code').textContent = codes[Math.floor(Math.random() * codes.length)];
+  const msg = (t, kind) => { const m = $('#msg'); m.textContent = t || ''; m.className = 'msg ' + (kind || ''); };
+
+  if (!window.supabase || !CFG.SUPABASE_URL || /YOUR-/.test(CFG.SUPABASE_URL + CFG.SUPABASE_ANON_KEY)) {
+    msg('חסרות הגדרות Supabase בקובץ config.js. ההוראות נמצאות בקובץ README.', 'err');
+    return;
+  }
+  const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+  let recovering = /type=recovery/.test(location.hash + location.search);
+
+  function show(which){
+    ['login','signup','forgot','reset'].forEach(k => $('#f-' + k).hidden = k !== which);
+    $('#switch').hidden = which === 'reset';
+    $('#t-login').setAttribute('aria-selected', which === 'login' || which === 'forgot');
+    $('#t-signup').setAttribute('aria-selected', which === 'signup');
+    $('#google-wrap').hidden = !CFG.ENABLE_GOOGLE || !['login','signup'].includes(which);
+    msg('');
+    const first = $('#f-' + which + ' input'); if (first) first.focus();
+  }
+  document.querySelectorAll('[data-show]').forEach(b => b.addEventListener('click', () => show(b.dataset.show)));
+
+  function heb(err){
+    const m = String((err && err.message) || err || '');
+    if (/invalid login credentials/i.test(m)) return 'המייל או הסיסמה שגויים.';
+    if (/email not confirmed/i.test(m)) return 'צריך לאשר את כתובת המייל. בדקו את תיבת הדואר (גם בספאם).';
+    if (/already registered|already exists/i.test(m)) return 'כבר יש חשבון עם המייל הזה. נסו להיכנס.';
+    if (/password should be|weak password/i.test(m)) return 'הסיסמה חלשה מדי. בחרו סיסמה ארוכה יותר.';
+    if (/rate limit|too many|security purposes/i.test(m)) return 'יותר מדי ניסיונות. חכו כמה דקות ונסו שוב.';
+    if (/invalid.*email|unable to validate email/i.test(m)) return 'כתובת המייל לא תקינה.';
+    if (/fetch|network/i.test(m)) return 'אין חיבור לשרת. בדקו את החיבור לאינטרנט.';
+    return 'משהו השתבש. נסו שוב.';
+  }
+  async function busy(form, fn){
+    const b = form.querySelector('button[type="submit"]'); b.disabled = true;
+    try { await fn(); } finally { b.disabled = false; }
+  }
+
+  $('#f-login').addEventListener('submit', e => { e.preventDefault(); busy(e.target, async () => {
+    const email = $('#l-email').value.trim(), password = $('#l-pass').value;
+    if (!email || !password) return msg('מלאו מייל וסיסמה.', 'err');
+    const {error} = await sb.auth.signInWithPassword({email, password});
+    if (error) return msg(heb(error), 'err');
+    location.replace(APP);
+  }); });
+
+  $('#f-signup').addEventListener('submit', e => { e.preventDefault(); busy(e.target, async () => {
+    const full_name = $('#s-name').value.trim(), email = $('#s-email').value.trim();
+    const p1 = $('#s-pass').value, p2 = $('#s-pass2').value;
+    if (!full_name || !email || !p1) return msg('מלאו את כל השדות.', 'err');
+    if (p1.length < 8) return msg('הסיסמה צריכה להיות לפחות 8 תווים.', 'err');
+    if (p1 !== p2) return msg('הסיסמאות לא זהות.', 'err');
+    const {data, error} = await sb.auth.signUp({email, password: p1, options: {data: {full_name}, emailRedirectTo: APP}});
+    if (error) return msg(heb(error), 'err');
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0)
+      return msg('כבר יש חשבון עם המייל הזה. נסו להיכנס.', 'err');
+    if (data.session) return location.replace(APP);
+    e.target.reset();
+    msg('נרשמתם. שלחנו לכם מייל עם קישור לאישור החשבון. אחרי האישור תועברו לאתר.', 'ok');
+  }); });
+
+  $('#f-forgot').addEventListener('submit', e => { e.preventDefault(); busy(e.target, async () => {
+    const email = $('#f-email').value.trim();
+    if (!email) return msg('מלאו את כתובת המייל.', 'err');
+    const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo: SELF});
+    if (error) return msg(heb(error), 'err');
+    msg('אם יש חשבון עם המייל הזה, שלחנו אליו קישור לאיפוס הסיסמה.', 'ok');
+  }); });
+
+  $('#f-reset').addEventListener('submit', e => { e.preventDefault(); busy(e.target, async () => {
+    const p1 = $('#r-pass').value, p2 = $('#r-pass2').value;
+    if (p1.length < 8) return msg('הסיסמה צריכה להיות לפחות 8 תווים.', 'err');
+    if (p1 !== p2) return msg('הסיסמאות לא זהות.', 'err');
+    const {error} = await sb.auth.updateUser({password: p1});
+    if (error) return msg(heb(error), 'err');
+    msg('הסיסמה עודכנה. מעבירים אתכם לאתר...', 'ok');
+    setTimeout(() => location.replace(APP), 1200);
+  }); });
+
+  $('#google').addEventListener('click', async () => {
+    const {error} = await sb.auth.signInWithOAuth({provider: 'google', options: {redirectTo: APP}});
+    if (error) msg(heb(error), 'err');
+  });
+
+  sb.auth.onAuthStateChange((ev, session) => {
+    if (ev === 'PASSWORD_RECOVERY') { recovering = true; show('reset'); }
+  });
+  (async () => {
+    if (recovering) { show('reset'); return; }
+    const {data: {session}} = await sb.auth.getSession();
+    if (session && !recovering) location.replace(APP);
+    else show(/signup/.test(location.hash) ? 'signup' : 'login');
+  })();
+})();
+</script>
+</body>
+</html>

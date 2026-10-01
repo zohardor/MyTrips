@@ -7,117 +7,137 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E✈️%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Suez+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#EDF1F6; --card:#FFFFFF; --ink:#16223A; --muted:#5B677D; --line:#D3DAE5; --soft:#E4EAF3;
-  --red:#C3313A; --blue:#23479A; --amber:#B97A0C; --green:#2B8259; --violet:#744CAE; --gray:#7F899B;
-  --stripe-white:#FFFFFF;
+  /* aeronautical-chart palette */
+  --bg:#F4F6F9; --card:#FFFFFF; --ink:#0F1C2E; --muted:#5A687C; --line:#DCE2EA; --soft:#EBEFF4;
+  --red:#B5267F;      /* chart magenta: the one accent (route, active state, highlights) */
+  --blue:#1E5DAE;     /* chart blue: links, focus, secondary data */
+  --amber:#B8770B; --green:#22825A; --violet:#6B4FB3; --gray:#7E8898;
+  --grid:#C9D3DF;
+  --display:"Barlow Condensed","IBM Plex Sans Hebrew",system-ui,sans-serif;
+  --r-panel:10px; --r-ctl:6px;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0F1624; --card:#172036; --ink:#E6EBF4; --muted:#9BA7BD; --line:#2A3553; --soft:#1E2944;
-    --red:#E0616A; --blue:#86A5EE; --amber:#E0A43A; --green:#4FB585; --violet:#A987DD; --gray:#8D97A9;
-    --stripe-white:#172036;
+    --bg:#0C1522; --card:#121E2F; --ink:#E4EAF2; --muted:#93A1B5; --line:#24324A; --soft:#18263A;
+    --red:#E25AAE; --blue:#7FA9EC; --amber:#E2A440; --green:#4CB98A; --violet:#A68CE6; --gray:#8B96A8; --grid:#2A3A55;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0F1624; --card:#172036; --ink:#E6EBF4; --muted:#9BA7BD; --line:#2A3553; --soft:#1E2944;
-  --red:#E0616A; --blue:#86A5EE; --amber:#E0A43A; --green:#4FB585; --violet:#A987DD; --gray:#8D97A9;
-  --stripe-white:#172036;
+  --bg:#0C1522; --card:#121E2F; --ink:#E4EAF2; --muted:#93A1B5; --line:#24324A; --soft:#18263A;
+  --red:#E25AAE; --blue:#7FA9EC; --amber:#E2A440; --green:#4CB98A; --violet:#A68CE6; --gray:#8B96A8; --grid:#2A3A55;
 }
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Assistant","Arial Hebrew","Segoe UI",Arial,sans-serif;font-size:17px;line-height:1.55;font-variant-numeric:tabular-nums}
-h1,h2,h3{font-family:"Suez One","Assistant",Georgia,serif;font-weight:400;margin:0;line-height:1.2}
-h2{font-size:1.6rem;margin-bottom:.35rem}
-h3{font-size:1.15rem}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Hebrew","Arial Hebrew","Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.6;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-weight:600;margin:0;line-height:1.25;letter-spacing:-.005em}
+h2{font-size:1.5rem;margin-bottom:.3rem}
+h3{font-size:1.08rem}
 .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
 .lead{color:var(--muted);margin:0 0 1.25rem;max-width:62ch}
 section{margin-top:44px}
 input,select,textarea,button{font:inherit;color:inherit}
-input,select,textarea{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+input,select,textarea{background:var(--card);border:1px solid var(--line);border-radius:var(--r-ctl);padding:7px 10px;min-width:0;transition:border-color .12s}
+input:hover,select:hover,textarea:hover{border-color:var(--grid)}
 input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 button{cursor:pointer}
-.btn{background:var(--ink);color:var(--bg);border:0;border-radius:8px;padding:8px 14px;font-weight:600}
+.btn{background:var(--ink);color:var(--card);border:0;border-radius:var(--r-ctl);padding:8px 14px;font-weight:600}
+.btn:hover{background:var(--blue)}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{background:var(--card);border-color:var(--blue);color:var(--blue)}
 .btn.small{padding:5px 10px;font-size:.92rem}
 .num{direction:ltr;unicode-bidi:isolate;display:inline-block}
 
 /* ---------- boarding pass ---------- */
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
-.topbar h1{font-size:1.25rem;color:var(--muted)}
+.topbar h1{font-size:1.05rem;font-weight:500;color:var(--muted)}
 .tb-start{display:flex;align-items:center;gap:12px}
 body[data-view="home"] .trip-only{display:none}
-body[data-view="home"] .topbar h1{font-size:2rem;color:var(--ink)}
+body[data-view="home"] .topbar h1{font-size:1.9rem;font-weight:700;color:var(--ink)}
 .trips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
-.trip-card{display:flex;flex-direction:column;text-align:start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden;color:var(--ink);transition:transform .15s ease, box-shadow .15s ease}
-.trip-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(20,30,60,.12)}
-.trip-card .stripe{height:9px;background:repeating-linear-gradient(135deg,var(--red) 0 10px,var(--stripe-white) 10px 15px,var(--blue) 15px 25px,var(--stripe-white) 25px 30px)}
-.trip-card.past .stripe{filter:grayscale(1);opacity:.6}
+.trip-card{display:flex;flex-direction:column;text-align:start;background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:0;overflow:hidden;color:var(--ink);transition:border-color .15s}
+.trip-card:hover{border-color:var(--blue)}
+.trip-card:hover .rt-arc{stroke:var(--blue)}
+.tc-map{height:84px;background:var(--soft);border-bottom:1px solid var(--line)}
+.tc-map svg{display:block;width:100%;height:100%}
+.trip-card.past .tc-map,.trip-card.past .tc-cover{filter:grayscale(1);opacity:.6}
 .tc-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:4px;flex:1}
 .tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.tc-code{font-family:"Suez One",Georgia,serif;font-size:2.3rem;line-height:1;direction:ltr}
+.tc-code{font-family:var(--display);font-weight:600;font-size:2.4rem;line-height:1;direction:ltr;letter-spacing:.02em}
 .tc-code.custom{font-size:1.5rem}
-.tc-when{font-size:.82rem;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted);white-space:nowrap}
-.tc-when.soon{background:var(--red);color:#fff}
-.tc-when.now{background:var(--green);color:#fff}
+.tc-when{font-size:.8rem;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tc-when.soon{border-color:var(--red);color:var(--red)}
+.tc-when.now{border-color:var(--green);color:var(--green)}
 .tc-name{font-weight:700;font-size:1.1rem;margin-top:6px}
 .tc-meta{color:var(--muted);font-size:.93rem}
-.tc-total{margin-top:auto;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:baseline}
-.tc-total b{font-family:"Suez One",Georgia,serif;font-weight:400;font-size:1.5rem}
+.tc-total{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+.tc-total b{font-family:var(--display);font-weight:600;font-size:1.5rem}
 .tc-total span{color:var(--muted);font-size:.9rem}
-.new-card{background:transparent;border:2px dashed var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.new-card{background:transparent;border:1px dashed var(--grid);border-radius:var(--r-panel);padding:18px;display:flex;flex-direction:column;gap:10px}
 .new-card h3{font-size:1.3rem}
 .new-card .nf{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .new-card label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:2px}
 .new-card select,.new-card input{width:100%;min-width:0;padding-inline:6px}
 .new-card .btn{margin-top:auto}
-.home-sep{grid-column:1/-1;font-family:"Suez One",Georgia,serif;font-size:1.2rem;color:var(--muted);margin-top:10px}
+.home-sep{grid-column:1/-1;font-size:1rem;font-weight:600;color:var(--muted);margin-top:18px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .topbar .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.sync{font-size:.88rem;color:var(--muted);display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
+.sync{font-size:.85rem;color:var(--muted);display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
 .sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--gray)}
 .sync[data-kind="ok"]::before{background:var(--green)}
 .sync[data-kind="busy"]::before{background:var(--amber)}
 .sync[data-kind="warn"]::before{background:var(--red)}
 .sync[data-kind="ro"]::before{background:var(--blue)}
 :disabled{opacity:.65;cursor:not-allowed}
-.airmail{padding:9px;border-radius:18px;background:repeating-linear-gradient(135deg,var(--red) 0 16px,var(--stripe-white) 16px 24px,var(--blue) 24px 40px,var(--stripe-white) 40px 48px)}
-.pass{background:var(--card);border-radius:11px;display:grid;grid-template-columns:1fr 290px;overflow:hidden}
-.pass-main{padding:26px 30px 24px}
-.pass-stub{border-inline-start:2px dashed var(--line);padding:26px 26px 24px;display:flex;flex-direction:column;justify-content:space-between;position:relative}
-.pass-stub::before,.pass-stub::after{content:"";position:absolute;inset-inline-start:-13px;width:24px;height:24px;border-radius:50%;background:var(--bg)}
-.pass-stub::before{top:-13px}.pass-stub::after{bottom:-13px}
-.route{display:flex;align-items:center;gap:18px;direction:ltr;justify-content:flex-end}
-.code{font-family:"Suez One",Georgia,serif;font-size:clamp(2.8rem,8vw,5.2rem);line-height:1;letter-spacing:.02em}
-.code.custom{font-size:clamp(1.8rem,5vw,3rem)}
-.route .path{flex:1;max-width:220px;height:2px;background:repeating-linear-gradient(90deg,var(--muted) 0 6px,transparent 6px 12px);position:relative}
-.route .path span{position:absolute;left:50%;top:50%;transform:translate(-50%,-55%);background:var(--card);padding:0 6px;font-size:1.5rem;color:var(--red)}
-.route-names{display:flex;justify-content:space-between;color:var(--muted);font-size:.95rem;margin-top:4px}
-.fields{display:grid;grid-template-columns:1.5fr 1fr 1fr .7fr;gap:14px;margin-top:22px}
+.flight{background:var(--card);border:1px solid var(--line);border-radius:14px;display:grid;grid-template-columns:1fr 300px;overflow:hidden}
+.pass-main{padding:24px 28px 22px;min-width:0}
+.pass-stub{border-inline-start:1px solid var(--line);background:var(--soft);padding:24px;display:flex;flex-direction:column;justify-content:space-between;gap:18px}
+.route{display:flex;align-items:flex-end;justify-content:space-between;direction:ltr}
+.code{font-family:var(--display);font-weight:600;font-size:clamp(3rem,8.5vw,5.6rem);line-height:.9;letter-spacing:.02em}
+.code.custom{font-size:clamp(1.9rem,5vw,3.2rem)}
+.code.origin{color:var(--muted)}
+.route-map{margin:6px -8px 0;height:150px}
+.route-map svg{display:block;width:100%;height:100%;overflow:visible}
+.rt-grid{stroke:var(--grid);stroke-width:1;stroke-dasharray:2 4;fill:none}
+.rt-arc{stroke:var(--red);stroke-width:2.5;fill:none;stroke-linecap:round}
+.rt-arc.ghost{stroke:var(--red);opacity:.18;stroke-width:8}
+.rt-pt{fill:var(--card);stroke:var(--ink);stroke-width:2}
+.rt-pt.dest{stroke:var(--red);fill:var(--red)}
+.rt-plane{fill:var(--red)}
+.route-meta{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.93rem;margin-top:4px}
+.route-meta b{color:var(--ink);font-weight:600}
+@media (prefers-reduced-motion:no-preference){
+  .route-map.draw .rt-arc:not(.ghost){stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw 1.1s cubic-bezier(.4,0,.2,1) forwards}
+  .route-map.draw .rt-plane{opacity:0;animation:appear .2s 1s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  @keyframes appear{to{opacity:1}}
+}
+.route-names{display:flex;justify-content:space-between;font-weight:600;font-size:1rem;margin-top:8px}
+.fields{display:grid;grid-template-columns:1.5fr 1fr 1fr .7fr;gap:12px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
 .field label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:3px}
 .field input,.field select{width:100%}
 #custom-wrap{margin-top:10px;display:none}
 #custom-wrap.on{display:block}
 .warn{color:var(--red);font-size:.9rem;margin-top:8px;min-height:1.2em}
 .stub-label{font-size:.88rem;color:var(--muted)}
-.stub-total{font-family:"Suez One",Georgia,serif;font-size:2.4rem;line-height:1.1;margin:.15rem 0 .2rem}
+.stub-total{font-family:var(--display);font-weight:600;font-size:3rem;line-height:1;margin:.3rem 0 .3rem}
 .stub-sub{color:var(--muted);font-size:.95rem}
-.stub-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
-.stub-grid b{display:block;font-size:1.15rem}
+.stub-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;border-top:1px solid var(--line);padding-top:14px}
+.stub-grid b{display:block;font-family:var(--display);font-weight:600;font-size:1.6rem;line-height:1.1}
 
 /* ---------- tabs ---------- */
 .tabs{position:sticky;top:0;z-index:5;display:flex;gap:4px;margin:28px -20px 0;padding:calc(10px + env(safe-area-inset-top,0px)) 20px 0;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tabs button{flex:0 0 auto;background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px 9px;font-weight:600;color:var(--muted);white-space:nowrap;border-radius:8px 8px 0 0}
-.tabs button:hover{color:var(--ink);background:var(--soft)}
-.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--red)}
+.tabs button{flex:0 0 auto;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:12px 14px 10px;font-weight:500;color:var(--muted);white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{color:var(--ink);font-weight:600;border-bottom-color:var(--red)}
 .badge{display:inline-block;min-width:1.6em;padding:0 6px;margin-inline-start:4px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:.8rem;font-weight:700;text-align:center}
 .badge:empty{display:none}
-.tabs button[aria-selected="true"] .badge{background:var(--ink);color:var(--bg)}
+.tabs button[aria-selected="true"] .badge{background:var(--red);color:#fff}
 .tabpanel{margin-top:26px}
 .tabpanel[hidden]{display:none}
 .tabpanel:focus-visible{outline:none}
@@ -125,14 +145,14 @@ body[data-view="home"] .topbar h1{font-size:2rem;color:var(--ink)}
 
 /* ---------- weather ---------- */
 .wx{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-.wx-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
-.wx-card h3 small{font-family:"Assistant",sans-serif;color:var(--muted);font-size:.9rem;margin-inline-start:6px}
+.wx-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:16px 18px}
+.wx-card h3 small{color:var(--muted);font-size:.9rem;margin-inline-start:6px}
 .wx-temp{display:flex;align-items:baseline;gap:10px;margin:6px 0 2px}
-.wx-temp b{font-family:"Suez One",Georgia,serif;font-weight:400;font-size:2.5rem;line-height:1}
+.wx-temp b{font-family:var(--display);font-weight:600;font-size:2.5rem;line-height:1}
 .wx-temp span{color:var(--muted);font-size:1.2rem}
 .wx-card p{margin:4px 0 0;font-size:.95rem}
 .wx-card .tip{color:var(--muted)}
-.wx-year{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 12px 10px}
+.wx-year{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:14px 12px 10px}
 .wx-col{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.8rem;color:var(--muted)}
 .wx-track{position:relative;height:110px;width:100%;max-width:24px}
 .wx-bar{position:absolute;left:0;right:0;border-radius:6px;background:var(--line)}
@@ -141,9 +161,9 @@ body[data-view="home"] .topbar h1{font-size:2rem;color:var(--ink)}
 
 /* ---------- rates ---------- */
 .rates{display:grid;grid-template-columns:1fr 1.4fr;gap:20px}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:20px}
 .rate-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.rate-row .sym{font-family:"Suez One",Georgia,serif;font-size:1.3rem;width:40px;text-align:center}
+.rate-row .sym{font-family:var(--display);font-weight:600;font-size:1.3rem;width:40px;text-align:center}
 .rate-row label{min-width:10.5em}
 .rate-row input{width:110px}
 .hint{font-size:.88rem;color:var(--muted)}
@@ -156,7 +176,7 @@ body[data-view="home"] .topbar h1{font-size:2rem;color:var(--ink)}
 
 /* ---------- budget ---------- */
 .budget{display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start}
-.cat{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden}
+.cat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);margin-bottom:14px;overflow:hidden}
 .cat-head{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-inline-start:6px solid var(--c)}
 .cat-head .sub{font-weight:700}
 .rows{padding:0 18px}
@@ -170,7 +190,7 @@ body[data-view="home"] .topbar h1{font-size:2rem;color:var(--ink)}
 .addrow:hover{color:var(--ink);border-color:var(--muted)}
 .empty{color:var(--muted);font-size:.95rem;padding:10px 0;border-top:1px solid var(--line)}
 .summary{position:sticky;top:calc(16px + env(safe-area-inset-top,0px))}
-.big{font-family:"Suez One",Georgia,serif;font-size:2.1rem;line-height:1.1}
+.big{font-family:var(--display);font-weight:600;font-size:2.6rem;line-height:1.05}
 .alt{color:var(--muted);margin:.2rem 0 1rem}
 .bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--soft);margin-bottom:14px}
 .bar i{display:block;height:100%}
@@ -185,13 +205,13 @@ body[data-view="home"] .topbar h1{font-size:2rem;color:var(--ink)}
 /* ---------- recommendations ---------- */
 .recs-head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
 .sights{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:14px}
-.sight{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.sight{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:16px;display:flex;flex-direction:column;gap:6px}
 .sight p{margin:0;color:var(--muted);font-size:.95rem;flex:1}
 .sight .meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
 .sight .price{font-weight:700}
-.sight.added{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
-.sight .btn.on{background:var(--amber);color:#fff}
-.eats{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0;margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.sight.added{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.sight .btn.on{background:var(--red);color:#fff}
+.eats{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0;margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);overflow:hidden}
 .eat{padding:14px 18px;border-inline-start:1px solid var(--line);border-top:1px solid var(--line);margin:-1px 0 0 -1px}
 .eat b{display:block}
 .eat span{color:var(--muted);font-size:.93rem}
@@ -199,9 +219,9 @@ body[data-view="home"] .topbar h1{font-size:2rem;color:var(--ink)}
 
 /* ---------- days ---------- */
 .days{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:14px}
-.day{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:14px 16px}
 .day h3{display:flex;justify-content:space-between;gap:8px}
-.day h3 small{font-family:"Assistant",sans-serif;color:var(--muted);font-size:.9rem}
+.day h3 small{color:var(--muted);font-size:.9rem}
 .day ul{margin:8px 0;padding-inline-start:18px}
 .day li{font-size:.97rem}
 .day textarea{width:100%;min-height:62px;resize:vertical;font-size:.95rem}
@@ -224,6 +244,14 @@ body[data-role="owner"] .member-only{display:none !important}
 .members .m-mail{display:block;color:var(--muted);font-size:.88rem;direction:ltr;text-align:start}
 .members .m-role{color:var(--muted);font-size:.9rem;white-space:nowrap}
 
+.admin-users{grid-column:1/-1;padding:0;overflow:hidden}
+.admin-scroll{overflow-x:auto}
+.admin-table{width:100%;border-collapse:collapse;font-size:.95rem}
+.admin-table th,.admin-table td{padding:10px 14px;text-align:start;border-bottom:1px solid var(--line);white-space:nowrap}
+.admin-table th{background:var(--soft);font-weight:700;color:var(--muted)}
+.admin-table td.n{text-align:center;font-variant-numeric:tabular-nums}
+.admin-table td.ltr{direction:ltr;text-align:right}
+
 /* ---------- journal ---------- */
 .j-form{margin-top:16px;display:flex;flex-direction:column;gap:12px}
 .j-grid{display:grid;grid-template-columns:180px 1fr;gap:12px}
@@ -240,8 +268,8 @@ body[data-role="owner"] .member-only{display:none !important}
 .j-thumb.new::after{content:"חדש";position:absolute;bottom:4px;inset-inline-start:4px;font-size:.72rem;background:var(--amber);color:#fff;padding:1px 6px;border-radius:999px}
 .j-day{margin-top:28px}
 .j-day > h3{display:flex;gap:10px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:12px}
-.j-day > h3 small{font-family:"Assistant",sans-serif;color:var(--muted);font-size:.95rem}
-.j-entry{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.j-day > h3 small{color:var(--muted);font-size:.95rem}
+.j-entry{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:16px 18px;margin-bottom:14px}
 .j-entry header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .j-entry h4{margin:0;font-size:1.15rem}
 .j-place{color:var(--muted);font-size:.93rem}
@@ -261,7 +289,7 @@ body[data-role="owner"] .member-only{display:none !important}
 .lb-prev{inset-inline-start:10px;top:50%;transform:translateY(-50%)}
 .lb-next{inset-inline-end:10px;top:50%;transform:translateY(-50%)}
 .lb-cap{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#dfe5f0;font-size:.95rem}
-.tc-cover{height:130px;background:var(--soft);overflow:hidden}
+.tc-cover{height:130px;background:var(--soft);overflow:hidden;border-bottom:1px solid var(--line)}
 .tc-cover img{width:100%;height:100%;object-fit:cover;display:block}
 .tc-journal{color:var(--muted);font-size:.9rem}
 @media (max-width:720px){ .j-grid{grid-template-columns:1fr} .lightbox{padding-inline:8px} .lb-prev,.lb-next{top:auto;bottom:calc(50px + env(safe-area-inset-bottom,0px));transform:none} }
@@ -274,15 +302,15 @@ body[data-role="owner"] .member-only{display:none !important}
 .checks input:checked + span{color:var(--muted);text-decoration:line-through}
 
 @media (max-width:920px){
-  .pass{grid-template-columns:1fr}
-  .pass-stub{border-inline-start:0;border-top:2px dashed var(--line)}
-  .pass-stub::before,.pass-stub::after{display:none}
+  .flight{grid-template-columns:1fr}
+  .pass-stub{border-inline-start:0;border-top:1px solid var(--line)}
   .budget,.rates{grid-template-columns:1fr}
   .summary{position:static}
 }
 @media (max-width:720px){
   .wrap{padding:18px 12px 48px}
-  .pass-main,.pass-stub{padding:20px}
+  .pass-main,.pass-stub{padding:18px}
+  .route-map{height:110px}
   .fields{grid-template-columns:1fr 1fr}
   .row,.row.noday{grid-template-columns:1fr 1fr 1fr;row-gap:6px}
   .row .r-name{grid-column:1 / -1}
@@ -330,16 +358,16 @@ body[data-role="owner"] .member-only{display:none !important}
   </div>
 
   <div id="trip-view" hidden>
-  <!-- boarding pass -->
-  <div class="airmail">
-    <div class="pass">
+  <!-- route header -->
+  <div class="flight">
       <div class="pass-main">
         <div class="route">
-          <div><div class="code">TLV</div></div>
-          <div class="path"><span>✈</span></div>
-          <div><div class="code" id="dest-code">BCN</div></div>
+          <div class="code" id="dest-code">BCN</div>
+          <div class="code origin">TLV</div>
         </div>
-        <div class="route-names"><span id="dest-name">ברצלונה, ספרד</span><span>תל אביב</span></div>
+        <div class="route-map" id="route-map" aria-hidden="true"></div>
+        <div class="route-names"><span>תל אביב</span><span id="dest-name">ברצלונה, ספרד</span></div>
+        <div class="route-meta" id="route-meta"></div>
 
         <div class="fields">
           <div class="field">
@@ -377,7 +405,6 @@ body[data-role="owner"] .member-only{display:none !important}
           <div><span class="stub-label">ימים / לילות</span><b id="stub-days">0 / 0</b></div>
         </div>
       </div>
-    </div>
   </div>
 
   <nav class="tabs" role="tablist" aria-label="חלקי התכנון">
@@ -546,6 +573,7 @@ body[data-role="owner"] .member-only{display:none !important}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
+<script src="route.js"></script>
 <script>
 (function(){
 const KEY = 'trip-planner-v1';
@@ -686,6 +714,24 @@ const CLIMATE = {
   BUD:{hi:[2,5,11,17,22,26,28,28,23,16,8,3],lo:[-3,-2,1,6,11,14,16,16,12,7,3,-1],rain:[7,6,7,7,9,8,7,7,6,6,8,8]},
   JFK:{hi:[4,6,10,17,22,27,29,28,25,18,12,6],lo:[-3,-2,2,7,12,18,21,20,17,10,5,0],rain:[11,9,11,11,11,10,10,9,8,8,9,10]}
 };
+function renderRoute(animate){
+  const box = $('#route-map'); if (!box) return;
+  box.innerHTML = routeSVG(S.dest, Math.max(300, Math.round(box.clientWidth || 640)), Math.round(box.clientHeight || 150));
+  const known = !!AIRPORTS[S.dest];
+  if (known) {
+    const km = distKm(AIRPORTS.TLV, AIRPORTS[S.dest]);
+    const mins = Math.round((km / 820 + 0.5) * 6) * 10, h = Math.floor(mins / 60), m = mins % 60;
+    const hTxt = h === 1 ? 'שעה' : h === 2 ? 'שעתיים' : h + ' שעות';
+    $('#route-meta').innerHTML = `<span><b class="num">${(Math.round(km/10)*10).toLocaleString('he-IL')}</b> ק״מ בקו אווירי</span>
+      <span>כ־<b>${hTxt}${m ? ' ו־' + m + ' דקות' : ''}</b> טיסה ישירה</span>`;
+  } else $('#route-meta').innerHTML = '<span>אין נתוני מיקום ליעד הזה</span>';
+  const arc = box.querySelector('.rt-arc:not(.ghost)');
+  if (arc && animate) {
+    box.style.setProperty('--len', Math.ceil(arc.getTotalLength()));
+    box.classList.remove('draw'); void box.offsetWidth; box.classList.add('draw');
+  }
+}
+
 const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const MONTHS_S = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
 
@@ -769,6 +815,9 @@ const destInfo = () => DESTS[S.dest] || DESTS.OTHER;
 const destLabel = () => S.dest === 'OTHER' ? (S.custom || 'היעד') : destInfo().name;
 
 /* ---------- pass ---------- */
+let routeAnim = false;
+let routeRaf = 0;
+window.addEventListener('resize', () => { cancelAnimationFrame(routeRaf); routeRaf = requestAnimationFrame(() => { if (document.body.dataset.view === 'trip') renderRoute(false); }); });
 function initPass(){
   const sel = $('#dest');
   sel.innerHTML = Object.entries(DESTS).map(([k,d]) =>
@@ -778,7 +827,7 @@ function initPass(){
   $('#travelers').value = S.travelers;
   $('#custom').value = S.custom;
 
-  sel.addEventListener('change', () => { S.dest = sel.value; save(); renderPass(); renderRecs(); renderSummary(); });
+  sel.addEventListener('change', () => { S.dest = sel.value; routeAnim = true; save(); renderPass(); renderRecs(); renderSummary(); });
   $('#custom').addEventListener('input', e => { S.custom = e.target.value; save(); renderPass(); renderRecs(); });
   $('#from').addEventListener('change', e => { S.from = e.target.value; onDates(); });
   $('#to').addEventListener('change', e => { S.to = e.target.value; onDates(); });
@@ -804,6 +853,7 @@ function renderPass(){
   $('#stub-days').textContent = days() + ' / ' + nights();
   renderWeather();
   renderConv();
+  renderRoute(routeAnim); routeAnim = false;
 }
 
 /* ---------- weather ---------- */
@@ -1155,10 +1205,17 @@ async function loadTrips(){
   const next = new Map();
   (t.data || []).forEach(r => next.set(r.id, {
     state: r.state, canon: canon(r.state), owner: r.owner_id,
-    role: r.owner_id === me.id ? 'owner' : (roles.get(r.id) || 'viewer')
+    role: r.owner_id === me.id ? 'owner' : (me.admin ? 'admin' : (roles.get(r.id) || 'viewer'))
   }));
+  if (me.admin) {
+    const {data} = await sb.from('profiles').select('id, email, full_name');
+    people = new Map((data || []).map(p => [p.id, p]));
+  }
   return next;
 }
+let people = new Map();   // admin only: every registered user
+const canManage = t => t && (t.role === 'owner' || t.role === 'admin');
+const ownerName = id => { const p = people.get(id); return p ? (p.full_name || p.email) : ''; };
 const fromRow = r => ({
   tripId: r.trip_id, date: r.entry_date || '', title: r.title || '', text: r.body || '',
   place: r.place || '', photos: r.photos || [], createdAt: Date.parse(r.created_at) || 0
@@ -1305,11 +1362,12 @@ function setView(v){
 }
 function openTrip(id){
   const t = trips.get(id); if (!t) return;
-  S = normalize(clone(t.state)); currentId = id; lastCanon = t.canon;
+  S = normalize(clone(t.state)); currentId = id; lastCanon = t.canon; routeAnim = true;
   readOnly = t.role === 'viewer';
   releaseRO();
-  document.body.dataset.role = t.role;
-  $('#share-open').textContent = t.role === 'owner' ? 'שיתוף' : 'משתתפים';
+  document.body.dataset.role = canManage(t) ? 'owner' : t.role;
+  $('#share-open').textContent = canManage(t) ? 'שיתוף' : 'משתתפים';
+  if (t.role === 'admin') setTimeout(() => setStatus('גישת מנהל: הטיול של ' + (ownerName(t.owner) || 'משתמש אחר'), 'ro'), 0);
   setView('trip'); applyAll(); closeComposer(); renderJournal(); updateBadges();
   setStatus(readOnly ? 'צפייה בלבד' : 'מסונכרן', readOnly ? 'ro' : 'ok');
 }
@@ -1341,7 +1399,7 @@ function tripInfo(id, t){
     const dfy = new Intl.DateTimeFormat('he-IL', {day:'numeric', month:'numeric', year:'numeric'});
     const range = (!isNaN(a) && !isNaN(b)) ? df.format(a) + ' עד ' + dfy.format(b) : '';
     return {
-      id, past, when, cls, sortKey, range, role: t.role,
+      id, past, when, cls, sortKey, range, role: t.role, owner: t.owner, dest: st.dest,
       code: st.dest === 'OTHER' ? (st.custom || '???') : st.dest,
       custom: st.dest === 'OTHER',
       name: st.dest === 'OTHER' ? (st.custom || 'יעד אחר') : d.name + ', ' + d.country,
@@ -1353,13 +1411,13 @@ function cardHTML(i){
   const cover = coverFor(i.id);
   const n = entriesFor(i.id).length;
   return `<button class="trip-card keep ${i.past ? 'past' : ''}" data-open="${esc(i.id)}">
-    <div class="stripe"></div>
-    ${cover ? `<div class="tc-cover">${imgTag(cover)}</div>` : ''}
+    ${cover ? `<div class="tc-cover">${imgTag(cover)}</div>` : `<div class="tc-map" aria-hidden="true">${routeSVG(i.dest, 300, 84, {pad: 26, r: 4, planeScale: .8})}</div>`}
     <div class="tc-body">
       <div class="tc-top"><span class="tc-code ${i.custom ? 'custom' : ''}">${esc(i.code)}</span>${i.when ? `<span class="tc-when ${i.cls}">${i.when}</span>` : ''}</div>
       <div class="tc-name">${esc(i.name)}</div>
       <div class="tc-meta">${esc(i.range)}${i.range ? ', ' : ''}${i.days} ימים, ${i.travelers === 1 ? 'נוסע אחד' : i.travelers + ' נוסעים'}</div>
-      ${i.role !== 'owner' ? `<div class="tc-shared">${i.role === 'viewer' ? 'שותף איתך לצפייה' : 'שותף איתך'}</div>` : ''}
+      ${i.role === 'admin' ? `<div class="tc-shared">של ${esc(ownerName(i.owner) || 'משתמש אחר')}</div>` :
+        i.role !== 'owner' ? `<div class="tc-shared">${i.role === 'viewer' ? 'שותף איתך לצפייה' : 'שותף איתך'}</div>` : ''}
       ${n ? `<div class="tc-journal">${n === 1 ? 'רשומה אחת ביומן' : n + ' רשומות ביומן'}</div>` : ''}
       <div class="tc-total"><span>עלות משוערת</span><b class="num">${fmt(i.total, 'ILS')}</b></div>
     </div>
@@ -1383,11 +1441,33 @@ function renderHome(){
   const infos = [...trips.entries()].map(([id, t]) => tripInfo(id, t));
   const upcoming = infos.filter(i => !i.past).sort((x, y) => x.sortKey - y.sortKey);
   const past = infos.filter(i => i.past).sort((x, y) => y.sortKey - x.sortKey);
+  const mine = i => i.role !== 'admin';
   let html = newCardHTML();
-  html += upcoming.map(cardHTML).join('');
-  if (past.length) html += `<div class="home-sep">טיולים שהסתיימו</div>` + past.map(cardHTML).join('');
+  html += upcoming.filter(mine).map(cardHTML).join('');
+  const pastMine = past.filter(mine);
+  if (pastMine.length) html += `<div class="home-sep">טיולים שהסתיימו</div>` + pastMine.map(cardHTML).join('');
+  if (me.admin) {
+    const others = [...upcoming, ...past].filter(i => !mine(i));
+    html += `<div class="home-sep">כל הטיולים של משתמשים אחרים (${others.length})</div>` +
+      (others.length ? others.map(cardHTML).join('') : '<div class="panel">אין עדיין טיולים של משתמשים אחרים.</div>');
+    html += `<div class="home-sep">משתמשים רשומים</div><div class="panel admin-users" id="admin-users">טוען...</div>`;
+  }
   $('#trips-grid').innerHTML = html;
+  if (me.admin) renderAdminUsers();
   hydratePhotos($('#trips-grid'));
+}
+async function renderAdminUsers(){
+  const box = $('#admin-users'); if (!box) return;
+  const {data, error} = await sb.rpc('admin_users');
+  if (error) { box.textContent = 'לא הצלחנו לטעון את רשימת המשתמשים.'; return; }
+  const df = new Intl.DateTimeFormat('he-IL', {day:'numeric', month:'numeric', year:'numeric'});
+  const d = v => v ? df.format(new Date(v)) : '—';
+  box.innerHTML = `<div class="admin-scroll"><table class="admin-table">
+    <thead><tr><th>שם</th><th>מייל</th><th>נרשם</th><th>כניסה אחרונה</th><th>טיולים</th><th>משותף איתו</th><th>רשומות ביומן</th><th>תפקיד</th></tr></thead>
+    <tbody>${(data || []).map(u => `<tr>
+      <td>${esc(u.full_name || '—')}</td><td class="ltr">${esc(u.email)}</td><td>${d(u.created_at)}</td><td>${d(u.last_sign_in_at)}</td>
+      <td class="n">${u.trips_owned}</td><td class="n">${u.trips_shared}</td><td class="n">${u.journal_entries}</td><td>${u.is_admin ? 'מנהל' : 'משתמש'}</td>
+    </tr>`).join('')}</tbody></table></div>`;
 }
 function initHome(){
   $('#trips-grid').addEventListener('click', e => {
@@ -1431,7 +1511,7 @@ $('#dup').addEventListener('click', async () => {
 });
 $('#del').addEventListener('click', async () => {
   const t = trips.get(currentId);
-  if (!t || t.role !== 'owner') return;
+  if (!canManage(t)) return;
   if (!confirm('למחוק את הטיול, כולל היומן והתמונות? הוא יימחק גם לכל המשתתפים.')) return;
   clearTimeout(timer); timer = null;
   const id = currentId; currentId = null;
@@ -1453,13 +1533,13 @@ async function renderMembers(){
   $('#share-list').innerHTML = rows.map(r => `<li>
       <div><span class="m-name">${esc(r.name || r.email || 'משתמש')}${r.id === me.id ? ' (את/ה)' : ''}</span><span class="m-mail">${esc(r.email || '')}</span></div>
       <div style="display:flex;gap:8px;align-items:center"><span class="m-role">${roleTxt[r.role]}</span>
-      ${t.role === 'owner' && r.role !== 'owner' ? `<button class="btn ghost small keep" data-unshare="${esc(r.id)}">הסרה</button>` : ''}</div>
+      ${canManage(t) && r.role !== 'owner' ? `<button class="btn ghost small keep" data-unshare="${esc(r.id)}">הסרה</button>` : ''}</div>
     </li>`).join('');
 }
 function initShare(){
   const modal = $('#share');
   const close = () => { modal.hidden = true; $('#share-msg').textContent = ''; };
-  $('#share-open').addEventListener('click', () => { modal.hidden = false; renderMembers(); if (trips.get(currentId)?.role === 'owner') $('#share-email').focus(); });
+  $('#share-open').addEventListener('click', () => { modal.hidden = false; renderMembers(); if (canManage(trips.get(currentId))) $('#share-email').focus(); });
   $('#share-close').addEventListener('click', close);
   modal.addEventListener('click', e => { if (e.target === modal) close(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) close(); });
@@ -1738,7 +1818,8 @@ async function boot(){
   if (!session) { location.replace('login.html'); return; }
   const u = session.user;
   me = {id: u.id, email: u.email, name: (u.user_metadata && u.user_metadata.full_name) || u.email};
-  $('#who').textContent = me.name; $('#who').title = me.email;
+  try { const {data} = await sb.rpc('is_admin'); me.admin = data === true; } catch(e) { me.admin = false; }
+  $('#who').textContent = me.name + (me.admin ? ' (מנהל)' : ''); $('#who').title = me.email;
   sb.auth.onAuthStateChange((ev, s) => { if (ev === 'SIGNED_OUT' || !s) location.replace('login.html'); });
   setStatus('טוען...', 'busy');
   try { trips = await loadTrips(); await loadJournal(); }

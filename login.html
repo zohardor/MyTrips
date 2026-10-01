@@ -7,41 +7,60 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E✈️%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Suez+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#EDF1F6; --card:#FFFFFF; --ink:#16223A; --muted:#5B677D; --line:#D3DAE5; --soft:#E4EAF3;
-  --red:#C3313A; --blue:#23479A; --green:#2B8259; --stripe-white:#FFFFFF;
+  --bg:#F4F6F9; --card:#FFFFFF; --ink:#0F1C2E; --muted:#5A687C; --line:#DCE2EA; --soft:#EBEFF4;
+  --red:#B5267F; --blue:#1E5DAE; --green:#22825A; --grid:#C9D3DF;
+  --display:"Barlow Condensed","IBM Plex Sans Hebrew",system-ui,sans-serif;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme: dark){
-  :root{ --bg:#0F1624; --card:#172036; --ink:#E6EBF4; --muted:#9BA7BD; --line:#2A3553; --soft:#1E2944;
-    --red:#E0616A; --blue:#86A5EE; --green:#4FB585; --stripe-white:#172036; }
+  :root{ --bg:#0C1522; --card:#121E2F; --ink:#E4EAF2; --muted:#93A1B5; --line:#24324A; --soft:#18263A;
+    --red:#E25AAE; --blue:#7FA9EC; --green:#4CB98A; --grid:#2A3A55; }
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Assistant","Arial Hebrew","Segoe UI",Arial,sans-serif;font-size:17px;line-height:1.55}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Hebrew","Arial Hebrew","Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
 main{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px 16px}
-.airmail{width:100%;max-width:440px;padding:9px;border-radius:18px;background:repeating-linear-gradient(135deg,var(--red) 0 16px,var(--stripe-white) 16px 24px,var(--blue) 24px 40px,var(--stripe-white) 40px 48px)}
-.card{background:var(--card);border-radius:11px;padding:30px 28px 26px}
-.route{font-family:"Suez One",Georgia,serif;font-size:2.4rem;line-height:1;direction:ltr;text-align:right;display:flex;justify-content:flex-end;gap:14px;align-items:center}
-.route span{color:var(--red);font-size:1.6rem}
-h1{font-family:"Suez One","Assistant",Georgia,serif;font-weight:400;font-size:1.9rem;margin:12px 0 2px}
-.sub{color:var(--muted);margin:0 0 22px}
+.card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.chart{background:var(--soft);border-bottom:1px solid var(--line);padding:18px 22px 6px}
+.codes{display:flex;justify-content:space-between;direction:ltr;font-family:var(--display);font-weight:600;font-size:3.2rem;line-height:.9;letter-spacing:.02em}
+.codes .origin{color:var(--muted)}
+.map{height:90px;margin:4px -6px 0}
+.map svg{display:block;width:100%;height:100%;overflow:visible}
+.rt-grid{stroke:var(--grid);stroke-width:1;stroke-dasharray:2 4;fill:none}
+.rt-arc{stroke:var(--red);stroke-width:2.5;fill:none;stroke-linecap:round}
+.rt-arc.ghost{opacity:.18;stroke-width:8}
+.rt-pt{fill:var(--card);stroke:var(--ink);stroke-width:2}
+.rt-pt.dest{stroke:var(--red);fill:var(--red)}
+.rt-plane{fill:var(--red)}
+@media (prefers-reduced-motion:no-preference){
+  .map .rt-arc:not(.ghost){stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw 1.2s .15s cubic-bezier(.4,0,.2,1) forwards}
+  .map .rt-plane{opacity:0;animation:appear .2s 1.3s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  @keyframes appear{to{opacity:1}}
+}
+.body{padding:22px 24px 24px}
+h1{font-weight:700;font-size:1.6rem;margin:0 0 2px;line-height:1.25}
+.sub{color:var(--muted);margin:0 0 18px}
 .switch{display:flex;border-bottom:1px solid var(--line);margin-bottom:18px}
-.switch button{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:10px 8px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer}
-.switch button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--red)}
+.switch button{flex:1;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 8px;font:inherit;font-weight:500;color:var(--muted);cursor:pointer}
+.switch button[aria-selected="true"]{color:var(--ink);font-weight:600;border-bottom-color:var(--red)}
 form{display:flex;flex-direction:column;gap:12px}
 form[hidden]{display:none}
-label{display:block;font-size:.88rem;color:var(--muted);margin-bottom:3px}
-input{width:100%;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+label{display:block;font-size:.86rem;color:var(--muted);margin-bottom:3px}
+input{width:100%;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:9px 11px}
+input:hover{border-color:var(--grid)}
 input[type="email"]{direction:ltr;text-align:right}
 input:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.btn{font:inherit;font-weight:700;background:var(--ink);color:var(--bg);border:0;border-radius:8px;padding:11px 14px;cursor:pointer;margin-top:4px}
+.btn{font:inherit;font-weight:600;background:var(--ink);color:var(--card);border:0;border-radius:6px;padding:11px 14px;cursor:pointer;margin-top:4px}
+.btn:hover{background:var(--blue)}
 .btn:disabled{opacity:.6;cursor:wait}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--blue);color:var(--blue)}
 .link{background:none;border:0;padding:0;font:inherit;color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:3px;align-self:flex-start}
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.9rem;margin:6px 0 2px}
 .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -53,9 +72,12 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-o
 </head>
 <body>
 <main>
-  <div class="airmail">
-    <div class="card">
-      <div class="route">TLV <span>✈</span> <b id="dest-code" style="font-weight:400">BCN</b></div>
+  <div class="card">
+    <div class="chart" aria-hidden="true">
+      <div class="codes"><span id="dest-code">BCN</span><span class="origin">TLV</span></div>
+      <div class="map" id="map"></div>
+    </div>
+    <div class="body">
       <h1>הטיולים שלי</h1>
       <p class="sub">מתכננים, מתעדים ומשתפים טיולים עם מי שנוסע איתכם.</p>
 
@@ -106,14 +128,19 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-o
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
+<script src="route.js"></script>
 <script>
 (function(){
   const $ = s => document.querySelector(s);
   const CFG = window.TRIP_CONFIG || {};
   const base = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
   const APP = base + 'index.html', SELF = base + 'login.html';
-  const codes = ['BCN','MAD','FCO','CDG','LHR','AMS','ATH','LIS','VIE','PRG','BUD','JFK'];
-  $('#dest-code').textContent = codes[Math.floor(Math.random() * codes.length)];
+  const codes = Object.keys(AIRPORTS).filter(c => c !== 'TLV' && c !== 'JFK');
+  const code = codes[Math.floor(Math.random() * codes.length)];
+  $('#dest-code').textContent = code;
+  const map = $('#map');
+  map.innerHTML = routeSVG(code, Math.max(280, map.clientWidth || 380), map.clientHeight || 90, {pad: 18, r: 4.5, plane: false});
+  map.style.setProperty('--len', Math.ceil(map.querySelectorAll('.rt-arc')[1].getTotalLength()));
   const msg = (t, kind) => { const m = $('#msg'); m.textContent = t || ''; m.className = 'msg ' + (kind || ''); };
 
   if (!window.supabase || !CFG.SUPABASE_URL || /YOUR-/.test(CFG.SUPABASE_URL + CFG.SUPABASE_ANON_KEY)) {

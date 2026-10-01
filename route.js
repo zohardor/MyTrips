@@ -30,7 +30,7 @@ function routeSVG(code, W, H, opts){
   const span = Math.max(Math.abs(A[1]-B[1]), Math.abs(A[0]-B[0]));
   const step = opts.step || (span > 60 ? 20 : span > 25 ? 10 : 5);
   const lon0 = Math.floor((cxLon - (W/2)/(k*sc)) / step) * step, lon1 = cxLon + (W/2)/(k*sc);
-  for (let lo = lon0; lo <= lon1; lo += step) { const x = P([0, lo])[0]; grid += `<line class="rt-grid" x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${H}"/>`; }
+  for (let lo = lon0; lo <= lon1; lo += step) { const x = P([0, lo])[0]; if (x < 0 || x > W) continue; grid += `<line class="rt-grid" x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${H}"/>`; }
   const la0 = Math.floor((cyLat - (H/2)/sc) / step) * step, la1 = cyLat + (H/2)/sc + step;
   for (let la = la0; la <= la1; la += step) { const y = P([la, 0])[1]; if (y > 0 && y < H) grid += `<line class="rt-grid" x1="0" y1="${y.toFixed(1)}" x2="${W}" y2="${y.toFixed(1)}"/>`; }
   const d = `M${pa[0].toFixed(1)},${pa[1].toFixed(1)} Q${c[0].toFixed(1)},${c[1].toFixed(1)} ${pb[0].toFixed(1)},${pb[1].toFixed(1)}`;
@@ -47,3 +47,10 @@ function routeSVG(code, W, H, opts){
     <circle class="rt-pt" cx="${pa[0].toFixed(1)}" cy="${pa[1].toFixed(1)}" r="${r}"/>
     <circle class="rt-pt dest" cx="${pb[0].toFixed(1)}" cy="${pb[1].toFixed(1)}" r="${r}"/>${plane}</svg>`;
 }
+
+// destination names for pages that don't load the full planner data
+const PLACE_NAMES = {
+  BCN:['ברצלונה','ספרד'], MAD:['מדריד','ספרד'], FCO:['רומא','איטליה'], CDG:['פריז','צרפת'], LHR:['לונדון','בריטניה'],
+  AMS:['אמסטרדם','הולנד'], ATH:['אתונה','יוון'], LIS:['ליסבון','פורטוגל'], VIE:['וינה','אוסטריה'], PRG:['פראג','צ׳כיה'],
+  BUD:['בודפשט','הונגריה'], JFK:['ניו יורק','ארה״ב']
+};

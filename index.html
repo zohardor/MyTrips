@@ -239,6 +239,19 @@ body[data-role="owner"] .member-only{display:none !important}
 .share-row{display:flex;gap:8px;flex-wrap:wrap}
 .share-row input{flex:1 1 200px}
 .members{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.pub{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.pub-main{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.pub-main input,.pub-opts input{width:18px;height:18px;margin-top:4px;accent-color:var(--red);flex-shrink:0}
+.pub-main small{display:block;color:var(--muted);font-size:.88rem;line-height:1.45}
+.pub-opts{display:flex;flex-direction:column;gap:6px;padding-inline-start:30px}
+.pub-opts label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:.95rem}
+.pub-opts input{margin-top:3px}
+.pub-opts[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.pub-link{display:flex;gap:8px;flex-wrap:wrap}
+.pub-link[hidden]{display:none}
+.pub-link input{flex:1 1 220px;direction:ltr;font-size:.88rem;color:var(--muted)}
+.tc-public{font-size:.8rem;font-weight:600;color:var(--red)}
+#share-msg:empty,#pub-msg:empty{display:none}
 .members li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .members .m-name{font-weight:600}
 .members .m-mail{display:block;color:var(--muted);font-size:.88rem;direction:ltr;text-align:start}
@@ -565,6 +578,22 @@ body[data-role="owner"] .member-only{display:none !important}
       </form>
       <div class="hint" id="share-msg" role="status"></div>
       <ul class="members" id="share-list"></ul>
+      <section class="pub" id="pub" aria-labelledby="pub-title">
+        <label class="pub-main owner-only">
+          <input type="checkbox" id="pub-on" class="keep">
+          <span><b id="pub-title">טיול פומבי</b><small>כל מי שיש לו את הקישור יכול לצפות בטיול, גם בלי להירשם. אי אפשר לערוך דרך הקישור.</small></span>
+        </label>
+        <div class="pub-opts owner-only" id="pub-opts">
+          <label><input type="checkbox" id="pub-journal" class="keep"> לכלול את היומן והתמונות</label>
+          <label><input type="checkbox" id="pub-budget" class="keep"> לכלול את התקציב והעלויות</label>
+        </div>
+        <div class="pub-link" id="pub-link" hidden>
+          <input type="text" id="pub-url" readonly aria-label="הקישור הציבורי" class="keep">
+          <button class="btn small keep" type="button" id="pub-copy">העתקת הקישור</button>
+          <a class="btn ghost small" id="pub-view" target="_blank" rel="noopener">פתיחה</a>
+        </div>
+        <div class="hint" id="pub-msg" role="status"></div>
+      </section>
       <button class="btn ghost small keep member-only" id="share-leave">עזיבת הטיול</button>
     </div>
   </div>
@@ -1196,7 +1225,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 
 async function loadTrips(){
   const [t, m] = await Promise.all([
-    sb.from('trips').select('id, owner_id, state, updated_at'),
+    sb.from('trips').select('id, owner_id, state, updated_at, is_public, public_journal, public_budget'),
     sb.from('trip_members').select('trip_id, role').eq('user_id', me.id)
   ]);
   if (t.error) throw t.error;
@@ -1205,6 +1234,7 @@ async function loadTrips(){
   const next = new Map();
   (t.data || []).forEach(r => next.set(r.id, {
     state: r.state, canon: canon(r.state), owner: r.owner_id,
+    pub: {on: !!r.is_public, journal: !!r.public_journal, budget: !!r.public_budget},
     role: r.owner_id === me.id ? 'owner' : (me.admin ? 'admin' : (roles.get(r.id) || 'viewer'))
   }));
   if (me.admin) {
@@ -1399,7 +1429,7 @@ function tripInfo(id, t){
     const dfy = new Intl.DateTimeFormat('he-IL', {day:'numeric', month:'numeric', year:'numeric'});
     const range = (!isNaN(a) && !isNaN(b)) ? df.format(a) + ' עד ' + dfy.format(b) : '';
     return {
-      id, past, when, cls, sortKey, range, role: t.role, owner: t.owner, dest: st.dest,
+      id, past, when, cls, sortKey, range, role: t.role, owner: t.owner, dest: st.dest, pub: !!(t.pub && t.pub.on),
       code: st.dest === 'OTHER' ? (st.custom || '???') : st.dest,
       custom: st.dest === 'OTHER',
       name: st.dest === 'OTHER' ? (st.custom || 'יעד אחר') : d.name + ', ' + d.country,
@@ -1418,6 +1448,7 @@ function cardHTML(i){
       <div class="tc-meta">${esc(i.range)}${i.range ? ', ' : ''}${i.days} ימים, ${i.travelers === 1 ? 'נוסע אחד' : i.travelers + ' נוסעים'}</div>
       ${i.role === 'admin' ? `<div class="tc-shared">של ${esc(ownerName(i.owner) || 'משתמש אחר')}</div>` :
         i.role !== 'owner' ? `<div class="tc-shared">${i.role === 'viewer' ? 'שותף איתך לצפייה' : 'שותף איתך'}</div>` : ''}
+      ${i.pub ? '<div class="tc-public">פומבי, כל מי שיש לו קישור יכול לצפות</div>' : ''}
       ${n ? `<div class="tc-journal">${n === 1 ? 'רשומה אחת ביומן' : n + ' רשומות ביומן'}</div>` : ''}
       <div class="tc-total"><span>עלות משוערת</span><b class="num">${fmt(i.total, 'ILS')}</b></div>
     </div>
@@ -1536,10 +1567,38 @@ async function renderMembers(){
       ${canManage(t) && r.role !== 'owner' ? `<button class="btn ghost small keep" data-unshare="${esc(r.id)}">הסרה</button>` : ''}</div>
     </li>`).join('');
 }
+const publicUrl = id => location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'view.html?trip=' + id;
+function renderPublic(){
+  const t = trips.get(currentId); if (!t) return;
+  const pub = t.pub || {on: false, journal: false, budget: false};
+  $('#pub-on').checked = pub.on; $('#pub-journal').checked = pub.journal; $('#pub-budget').checked = pub.budget;
+  $('#pub-opts').setAttribute('aria-disabled', !pub.on);
+  $('#pub-link').hidden = !pub.on;
+  $('#pub').hidden = !canManage(t) && !pub.on;
+  if (pub.on) { $('#pub-url').value = publicUrl(currentId); $('#pub-view').href = publicUrl(currentId); }
+}
+async function savePublic(){
+  const t = trips.get(currentId); if (!canManage(t)) return;
+  const next = {on: $('#pub-on').checked, journal: $('#pub-journal').checked, budget: $('#pub-budget').checked};
+  $('#pub-msg').textContent = 'שומר...';
+  const {data, error} = await sb.from('trips')
+    .update({is_public: next.on, public_journal: next.journal, public_budget: next.budget})
+    .eq('id', currentId).select('id');
+  if (error || !data || !data.length) { $('#pub-msg').textContent = 'השינוי לא נשמר. רק מארגן הטיול יכול לשנות את השיתוף הפומבי.'; renderPublic(); return; }
+  t.pub = next;
+  $('#pub-msg').textContent = next.on ? 'הטיול פומבי. כל מי שיקבל את הקישור יוכל לצפות בו.' : 'הטיול כבר לא פומבי. הקישור הפסיק לעבוד.';
+  renderPublic();
+}
 function initShare(){
   const modal = $('#share');
   const close = () => { modal.hidden = true; $('#share-msg').textContent = ''; };
-  $('#share-open').addEventListener('click', () => { modal.hidden = false; renderMembers(); if (canManage(trips.get(currentId))) $('#share-email').focus(); });
+  ['pub-on','pub-journal','pub-budget'].forEach(id => $('#' + id).addEventListener('change', savePublic));
+  $('#pub-copy').addEventListener('click', async () => {
+    const url = $('#pub-url').value;
+    try { await navigator.clipboard.writeText(url); $('#pub-msg').textContent = 'הקישור הועתק.'; }
+    catch(e) { $('#pub-url').select(); $('#pub-msg').textContent = 'סמנו את הקישור והעתיקו ידנית.'; }
+  });
+  $('#share-open').addEventListener('click', () => { modal.hidden = false; $('#pub-msg').textContent = ''; renderPublic(); renderMembers(); if (canManage(trips.get(currentId))) $('#share-email').focus(); });
   $('#share-close').addEventListener('click', close);
   modal.addEventListener('click', e => { if (e.target === modal) close(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) close(); });

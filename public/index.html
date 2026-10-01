@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>הטיולים שלי</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E✈️%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans+Hebrew:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* aeronautical-chart palette */
+  --bg:#F4F6F9; --card:#FFFFFF; --ink:#0F1C2E; --muted:#5A687C; --line:#DCE2EA; --soft:#EBEFF4;
+  --red:#B5267F;      /* chart magenta: the one accent (route, active state, highlights) */
+  --blue:#1E5DAE;     /* chart blue: links, focus, secondary data */
+  --amber:#B8770B; --green:#22825A; --violet:#6B4FB3; --gray:#7E8898;
+  --grid:#C9D3DF;
+  --display:"Barlow Condensed","IBM Plex Sans Hebrew",system-ui,sans-serif;
+  --r-panel:10px; --r-ctl:6px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1522; --card:#121E2F; --ink:#E4EAF2; --muted:#93A1B5; --line:#24324A; --soft:#18263A;
+    --red:#E25AAE; --blue:#7FA9EC; --amber:#E2A440; --green:#4CB98A; --violet:#A68CE6; --gray:#8B96A8; --grid:#2A3A55;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1522; --card:#121E2F; --ink:#E4EAF2; --muted:#93A1B5; --line:#24324A; --soft:#18263A;
+  --red:#E25AAE; --blue:#7FA9EC; --amber:#E2A440; --green:#4CB98A; --violet:#A68CE6; --gray:#8B96A8; --grid:#2A3A55;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Hebrew","Arial Hebrew","Segoe UI",Arial,sans-serif;font-size:16px;line-height:1.6;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-weight:600;margin:0;line-height:1.25;letter-spacing:-.005em}
+h2{font-size:1.5rem;margin-bottom:.3rem}
+h3{font-size:1.08rem}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+.lead{color:var(--muted);margin:0 0 1.25rem;max-width:62ch}
+section{margin-top:44px}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{background:var(--card);border:1px solid var(--line);border-radius:var(--r-ctl);padding:7px 10px;min-width:0;transition:border-color .12s}
+input:hover,select:hover,textarea:hover{border-color:var(--grid)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button{cursor:pointer}
+.btn{background:var(--ink);color:var(--card);border:0;border-radius:var(--r-ctl);padding:8px 14px;font-weight:600}
+.btn:hover{background:var(--blue)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{background:var(--card);border-color:var(--blue);color:var(--blue)}
+.btn.small{padding:5px 10px;font-size:.92rem}
+.num{direction:ltr;unicode-bidi:isolate;display:inline-block}
+
+/* ---------- boarding pass ---------- */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.topbar h1{font-size:1.05rem;font-weight:500;color:var(--muted)}
+.tb-start{display:flex;align-items:center;gap:12px}
+body[data-view="home"] .trip-only{display:none}
+body[data-view="home"] .topbar h1{font-size:1.9rem;font-weight:700;color:var(--ink)}
+.trips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
+.trip-card{display:flex;flex-direction:column;text-align:start;background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:0;overflow:hidden;color:var(--ink);transition:border-color .15s}
+.trip-card:hover{border-color:var(--blue)}
+.trip-card:hover .rt-arc{stroke:var(--blue)}
+.tc-map{height:84px;background:var(--soft);border-bottom:1px solid var(--line)}
+.tc-map svg{display:block;width:100%;height:100%}
+.trip-card.past .tc-map,.trip-card.past .tc-cover{filter:grayscale(1);opacity:.6}
+.tc-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:4px;flex:1}
+.tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.tc-code{font-family:var(--display);font-weight:600;font-size:2.4rem;line-height:1;direction:ltr;letter-spacing:.02em}
+.tc-code.custom{font-size:1.5rem}
+.tc-when{font-size:.8rem;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tc-when.soon{border-color:var(--red);color:var(--red)}
+.tc-when.now{border-color:var(--green);color:var(--green)}
+.tc-name{font-weight:700;font-size:1.1rem;margin-top:6px}
+.tc-meta{color:var(--muted);font-size:.93rem}
+.tc-total{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+.tc-total b{font-family:var(--display);font-weight:600;font-size:1.5rem}
+.tc-total span{color:var(--muted);font-size:.9rem}
+.new-card{background:transparent;border:1px dashed var(--grid);border-radius:var(--r-panel);padding:18px;display:flex;flex-direction:column;gap:10px}
+.new-card h3{font-size:1.3rem}
+.new-card .nf{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.new-card label{font-size:.85rem;color:var(--muted);display:block;margin-bottom:2px}
+.new-card select,.new-card input{width:100%;min-width:0;padding-inline:6px}
+.new-card .btn{margin-top:auto}
+.home-sep{grid-column:1/-1;font-size:1rem;font-weight:600;color:var(--muted);margin-top:18px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.topbar .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sync{font-size:.85rem;color:var(--muted);display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
+.sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--gray)}
+.sync[data-kind="ok"]::before{background:var(--green)}
+.sync[data-kind="busy"]::before{background:var(--amber)}
+.sync[data-kind="warn"]::before{background:var(--red)}
+.sync[data-kind="ro"]::before{background:var(--blue)}
+:disabled{opacity:.65;cursor:not-allowed}
+.flight{background:var(--card);border:1px solid var(--line);border-radius:14px;display:grid;grid-template-columns:1fr 300px;overflow:hidden}
+.pass-main{padding:24px 28px 22px;min-width:0}
+.pass-stub{border-inline-start:1px solid var(--line);background:var(--soft);padding:24px;display:flex;flex-direction:column;justify-content:space-between;gap:18px}
+.route{display:flex;align-items:flex-end;justify-content:space-between;direction:ltr}
+.code{font-family:var(--display);font-weight:600;font-size:clamp(3rem,8.5vw,5.6rem);line-height:.9;letter-spacing:.02em}
+.code.custom{font-size:clamp(1.9rem,5vw,3.2rem)}
+.code.origin{color:var(--muted)}
+.route-map{margin:6px -8px 0;height:150px}
+.route-map svg{display:block;width:100%;height:100%;overflow:visible}
+.rt-grid{stroke:var(--grid);stroke-width:1;stroke-dasharray:2 4;fill:none}
+.rt-arc{stroke:var(--red);stroke-width:2.5;fill:none;stroke-linecap:round}
+.rt-arc.ghost{stroke:var(--red);opacity:.18;stroke-width:8}
+.rt-pt{fill:var(--card);stroke:var(--ink);stroke-width:2}
+.rt-pt.dest{stroke:var(--red);fill:var(--red)}
+.rt-plane{fill:var(--red)}
+.route-meta{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.93rem;margin-top:4px}
+.route-meta b{color:var(--ink);font-weight:600}
+@media (prefers-reduced-motion:no-preference){
+  .route-map.draw .rt-arc:not(.ghost){stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw 1.1s cubic-bezier(.4,0,.2,1) forwards}
+  .route-map.draw .rt-plane{opacity:0;animation:appear .2s 1s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  @keyframes appear{to{opacity:1}}
+}
+.route-names{display:flex;justify-content:space-between;font-weight:600;font-size:1rem;margin-top:8px}
+.fields{display:grid;grid-template-columns:1.5fr 1fr 1fr .7fr;gap:12px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.field label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:3px}
+.field input,.field select{width:100%}
+#custom-wrap{margin-top:10px;display:none}
+#custom-wrap.on{display:block}
+.warn{color:var(--red);font-size:.9rem;margin-top:8px;min-height:1.2em}
+.stub-label{font-size:.88rem;color:var(--muted)}
+.stub-total{font-family:var(--display);font-weight:600;font-size:3rem;line-height:1;margin:.3rem 0 .3rem}
+.stub-sub{color:var(--muted);font-size:.95rem}
+.stub-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;border-top:1px solid var(--line);padding-top:14px}
+.stub-grid b{display:block;font-family:var(--display);font-weight:600;font-size:1.6rem;line-height:1.1}
+
+/* ---------- tabs ---------- */
+.tabs{position:sticky;top:0;z-index:5;display:flex;gap:4px;margin:28px -20px 0;padding:calc(10px + env(safe-area-inset-top,0px)) 20px 0;background:var(--bg);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:12px 14px 10px;font-weight:500;color:var(--muted);white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{color:var(--ink);font-weight:600;border-bottom-color:var(--red)}
+.badge{display:inline-block;min-width:1.6em;padding:0 6px;margin-inline-start:4px;border-radius:999px;background:var(--soft);color:var(--muted);font-size:.8rem;font-weight:700;text-align:center}
+.badge:empty{display:none}
+.tabs button[aria-selected="true"] .badge{background:var(--red);color:#fff}
+.tabpanel{margin-top:26px}
+.tabpanel[hidden]{display:none}
+.tabpanel:focus-visible{outline:none}
+@media (max-width:720px){ .tabs{margin-inline:-12px;padding-inline:12px} }
+
+/* ---------- weather ---------- */
+.wx{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.wx-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:16px 18px}
+.wx-card h3 small{color:var(--muted);font-size:.9rem;margin-inline-start:6px}
+.wx-temp{display:flex;align-items:baseline;gap:10px;margin:6px 0 2px}
+.wx-temp b{font-family:var(--display);font-weight:600;font-size:2.5rem;line-height:1}
+.wx-temp span{color:var(--muted);font-size:1.2rem}
+.wx-card p{margin:4px 0 0;font-size:.95rem}
+.wx-card .tip{color:var(--muted)}
+.wx-year{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:14px 12px 10px}
+.wx-col{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.8rem;color:var(--muted)}
+.wx-track{position:relative;height:110px;width:100%;max-width:24px}
+.wx-bar{position:absolute;left:0;right:0;border-radius:6px;background:var(--line)}
+.wx-col.on{color:var(--ink);font-weight:700}
+.wx-col.on .wx-bar{background:var(--red)}
+
+/* ---------- rates ---------- */
+.rates{display:grid;grid-template-columns:1fr 1.4fr;gap:20px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:20px}
+.rate-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.rate-row .sym{font-family:var(--display);font-weight:600;font-size:1.3rem;width:40px;text-align:center}
+.rate-row label{min-width:10.5em}
+.rate-row input{width:110px}
+.hint{font-size:.88rem;color:var(--muted)}
+.conv-in{display:flex;gap:10px;margin-bottom:14px}
+.conv-in input{flex:1}
+.conv-out{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.conv-out div{background:var(--soft);border-radius:10px;padding:12px}
+.conv-out small{display:block;color:var(--muted)}
+.conv-out b{font-size:1.3rem}
+
+/* ---------- budget ---------- */
+.budget{display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start}
+.cat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);margin-bottom:14px;overflow:hidden}
+.cat-head{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-inline-start:6px solid var(--c)}
+.cat-head .sub{font-weight:700}
+.rows{padding:0 18px}
+.row{display:grid;grid-template-columns:minmax(120px,1.6fr) 96px 64px 118px 104px 110px 34px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.row.noday{grid-template-columns:minmax(120px,1.6fr) 96px 64px 118px 110px 34px}
+.row output{text-align:end;font-weight:600}
+.row .del{background:none;border:0;color:var(--muted);font-size:1.3rem;line-height:1;padding:4px;border-radius:6px}
+.row .del:hover{color:var(--red)}
+.cat-foot{padding:10px 18px 14px}
+.addrow{background:none;border:1px dashed var(--line);border-radius:8px;padding:6px 12px;color:var(--muted)}
+.addrow:hover{color:var(--ink);border-color:var(--muted)}
+.empty{color:var(--muted);font-size:.95rem;padding:10px 0;border-top:1px solid var(--line)}
+.summary{position:sticky;top:calc(16px + env(safe-area-inset-top,0px))}
+.big{font-family:var(--display);font-weight:600;font-size:2.6rem;line-height:1.05}
+.alt{color:var(--muted);margin:.2rem 0 1rem}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--soft);margin-bottom:14px}
+.bar i{display:block;height:100%}
+.legend{list-style:none;margin:0;padding:0}
+.legend li{display:grid;grid-template-columns:12px 1fr auto auto;gap:8px;align-items:center;padding:5px 0;font-size:.97rem}
+.legend .dot{width:12px;height:12px;border-radius:3px}
+.legend .pct{color:var(--muted);width:3.2em;text-align:end}
+.per{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.per small{display:block;color:var(--muted)}
+.per b{font-size:1.15rem}
+
+/* ---------- recommendations ---------- */
+.recs-head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.sights{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:14px}
+.sight{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:16px;display:flex;flex-direction:column;gap:6px}
+.sight p{margin:0;color:var(--muted);font-size:.95rem;flex:1}
+.sight .meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.sight .price{font-weight:700}
+.sight.added{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.sight .btn.on{background:var(--red);color:#fff}
+.eats{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0;margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);overflow:hidden}
+.eat{padding:14px 18px;border-inline-start:1px solid var(--line);border-top:1px solid var(--line);margin:-1px 0 0 -1px}
+.eat b{display:block}
+.eat span{color:var(--muted);font-size:.93rem}
+.foodbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+
+/* ---------- days ---------- */
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:14px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:14px 16px}
+.day h3{display:flex;justify-content:space-between;gap:8px}
+.day h3 small{color:var(--muted);font-size:.9rem}
+.day ul{margin:8px 0;padding-inline-start:18px}
+.day li{font-size:.97rem}
+.day textarea{width:100%;min-height:62px;resize:vertical;font-size:.95rem}
+.unassigned{background:var(--soft);border-radius:10px;padding:10px 14px;margin-top:10px;font-size:.95rem}
+
+/* ---------- account & sharing ---------- */
+.who{font-size:.9rem;color:var(--muted);max-width:14em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body:not([data-role="owner"]) .owner-only{display:none !important}
+body[data-role="owner"] .member-only{display:none !important}
+.tc-shared{font-size:.82rem;font-weight:700;color:var(--blue)}
+.modal{position:fixed;inset:0;z-index:40;background:rgba(10,16,30,.55);display:flex;align-items:flex-start;justify-content:center;padding:calc(60px + env(safe-area-inset-top,0px)) 16px 16px;overflow:auto}
+.modal[hidden]{display:none}
+.modal-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;width:100%;max-width:520px;display:flex;flex-direction:column;gap:12px}
+.modal-head{display:flex;justify-content:space-between;align-items:center}
+.share-row{display:flex;gap:8px;flex-wrap:wrap}
+.share-row input{flex:1 1 200px}
+.members{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.pub{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.pub-main{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.pub-main input,.pub-opts input{width:18px;height:18px;margin-top:4px;accent-color:var(--red);flex-shrink:0}
+.pub-main small{display:block;color:var(--muted);font-size:.88rem;line-height:1.45}
+.pub-opts{display:flex;flex-direction:column;gap:6px;padding-inline-start:30px}
+.pub-opts label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:.95rem}
+.pub-opts input{margin-top:3px}
+.pub-opts[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.pub-link{display:flex;gap:8px;flex-wrap:wrap}
+.pub-link[hidden]{display:none}
+.pub-link input{flex:1 1 220px;direction:ltr;font-size:.88rem;color:var(--muted)}
+.tc-public{font-size:.8rem;font-weight:600;color:var(--red)}
+#share-msg:empty,#pub-msg:empty{display:none}
+.members li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.members .m-name{font-weight:600}
+.members .m-mail{display:block;color:var(--muted);font-size:.88rem;direction:ltr;text-align:start}
+.members .m-role{color:var(--muted);font-size:.9rem;white-space:nowrap}
+
+.admin-users{grid-column:1/-1;padding:0;overflow:hidden}
+.admin-scroll{overflow-x:auto}
+.admin-table{width:100%;border-collapse:collapse;font-size:.95rem}
+.admin-table th,.admin-table td{padding:10px 14px;text-align:start;border-bottom:1px solid var(--line);white-space:nowrap}
+.admin-table th{background:var(--soft);font-weight:700;color:var(--muted)}
+.admin-table td.n{text-align:center;font-variant-numeric:tabular-nums}
+.admin-table td.ltr{direction:ltr;text-align:right}
+
+/* ---------- AI planner ---------- */
+.ai-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:start;background:var(--ink);color:var(--card);border:0;border-radius:var(--r-panel);padding:20px;cursor:pointer;transition:background .15s}
+.ai-card:hover{background:var(--blue)}
+.ai-card h3{font-size:1.25rem}
+.ai-card p{margin:0;opacity:.85;font-size:.95rem;line-height:1.5}
+.ai-mark svg{width:34px;height:34px;fill:var(--red)}
+.ai-card:hover .ai-mark svg{fill:#fff}
+.ai-note{margin-top:auto;font-size:.8rem;opacity:.7}
+.ai-panel{max-width:760px}
+.ai-form{display:flex;flex-direction:column;gap:8px}
+.ai-form label{font-size:.86rem;color:var(--muted)}
+.ai-form textarea{width:100%;resize:vertical}
+.ai-row{display:grid;grid-template-columns:1.4fr .6fr .6fr auto;gap:10px;align-items:end}
+.ai-row input{width:100%}
+.ai-status{font-size:.95rem;color:var(--muted)}
+.ai-status:empty{display:none}
+.ai-status.busy::before{content:"";display:inline-block;width:10px;height:10px;margin-inline-end:8px;border-radius:50%;background:var(--red);animation:pulse 1s ease-in-out infinite alternate}
+@keyframes pulse{to{opacity:.25}}
+.ai-status.err{color:var(--red)}
+.ai-plan{border-top:1px solid var(--line);padding-top:14px;max-height:52vh;overflow:auto}
+.ai-sum{margin:0 0 12px}
+.ai-reply{background:var(--soft);border-radius:var(--r-ctl);padding:8px 12px;margin:0 0 12px;font-size:.95rem}
+.ai-day{margin-bottom:14px}
+.ai-day h4{margin:0 0 6px;font-size:1rem;display:flex;gap:8px;align-items:baseline}
+.ai-day h4 small{color:var(--muted);font-weight:400}
+.ai-item{display:grid;grid-template-columns:48px 1fr auto;gap:2px 10px;padding:7px 0;border-top:1px solid var(--line);font-size:.94rem}
+.ai-item time{font-family:var(--display);font-weight:600;color:var(--muted);font-size:1rem}
+.ai-item .nm{font-weight:600}
+.ai-item .kind{font-size:.78rem;color:var(--red);margin-inline-start:6px}
+.ai-item .ds{grid-column:2/4;color:var(--muted)}
+.ai-item .pr{white-space:nowrap;color:var(--muted)}
+.ai-tips{margin:6px 0 0;padding-inline-start:18px;color:var(--muted);font-size:.93rem}
+.ai-refine{display:flex;gap:8px}
+.ai-refine input{flex:1}
+.ai-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
+@media (max-width:720px){ .ai-row{grid-template-columns:1fr 1fr} .ai-row .btn{grid-column:1/-1} .ai-refine{flex-direction:column} }
+
+/* ---------- journal ---------- */
+.j-form{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+.j-grid{display:grid;grid-template-columns:180px 1fr;gap:12px}
+.j-wide{grid-column:1/-1}
+.j-grid textarea{width:100%;resize:vertical}
+.j-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.j-spacer{flex:1}
+.j-file{cursor:pointer}
+.j-photos-edit{display:flex;flex-wrap:wrap;gap:10px}
+.j-photos-edit:empty{display:none}
+.j-thumb{position:relative;width:96px;height:96px;border-radius:10px;overflow:hidden;background:var(--soft)}
+.j-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.j-thumb button{position:absolute;top:4px;inset-inline-end:4px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:1rem;line-height:1}
+.j-thumb.new::after{content:"חדש";position:absolute;bottom:4px;inset-inline-start:4px;font-size:.72rem;background:var(--amber);color:#fff;padding:1px 6px;border-radius:999px}
+.j-day{margin-top:28px}
+.j-day > h3{display:flex;gap:10px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:12px}
+.j-day > h3 small{color:var(--muted);font-size:.95rem}
+.j-entry{background:var(--card);border:1px solid var(--line);border-radius:var(--r-panel);padding:16px 18px;margin-bottom:14px}
+.j-entry header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.j-entry h4{margin:0;font-size:1.15rem}
+.j-place{color:var(--muted);font-size:.93rem}
+.j-text{white-space:pre-wrap;margin:8px 0 0}
+.j-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:12px}
+.j-gallery button{padding:0;border:0;border-radius:10px;overflow:hidden;aspect-ratio:1/1;background:var(--soft)}
+.j-gallery img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+.j-gallery button:hover img{transform:scale(1.04)}
+.j-tools{display:flex;gap:6px;flex-shrink:0}
+.j-empty{margin-top:18px;text-align:center;padding:36px 20px;color:var(--muted)}
+.lightbox{position:fixed;inset:0;z-index:50;background:rgba(8,12,22,.92);display:flex;align-items:center;justify-content:center;padding:calc(20px + env(safe-area-inset-top,0px)) 60px calc(20px + env(safe-area-inset-bottom,0px))}
+.lightbox[hidden]{display:none}
+.lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+.lb-btn{position:absolute;background:rgba(255,255,255,.12);color:#fff;border:0;width:44px;height:44px;border-radius:50%;font-size:1.6rem;line-height:1}
+.lb-btn:hover{background:rgba(255,255,255,.25)}
+.lb-close{top:calc(14px + env(safe-area-inset-top,0px));inset-inline-end:14px}
+.lb-prev{inset-inline-start:10px;top:50%;transform:translateY(-50%)}
+.lb-next{inset-inline-end:10px;top:50%;transform:translateY(-50%)}
+.lb-cap{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));left:0;right:0;text-align:center;color:#dfe5f0;font-size:.95rem}
+.tc-cover{height:130px;background:var(--soft);overflow:hidden;border-bottom:1px solid var(--line)}
+.tc-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.tc-journal{color:var(--muted);font-size:.9rem}
+@media (max-width:720px){ .j-grid{grid-template-columns:1fr} .lightbox{padding-inline:8px} .lb-prev,.lb-next{top:auto;bottom:calc(50px + env(safe-area-inset-bottom,0px));transform:none} }
+@media print{ #j-new,.j-tools,.j-form,.lightbox{display:none !important} }
+
+/* ---------- checklist ---------- */
+.checks{columns:2 280px;gap:24px;margin-top:10px}
+.checks label{display:flex;gap:10px;align-items:flex-start;break-inside:avoid;padding:6px 0}
+.checks input{margin-top:5px;width:18px;height:18px;accent-color:var(--blue)}
+.checks input:checked + span{color:var(--muted);text-decoration:line-through}
+
+@media (max-width:920px){
+  .flight{grid-template-columns:1fr}
+  .pass-stub{border-inline-start:0;border-top:1px solid var(--line)}
+  .budget,.rates{grid-template-columns:1fr}
+  .summary{position:static}
+}
+@media (max-width:720px){
+  .wrap{padding:18px 12px 48px}
+  .pass-main,.pass-stub{padding:18px}
+  .route-map{height:110px}
+  .fields{grid-template-columns:1fr 1fr}
+  .row,.row.noday{grid-template-columns:1fr 1fr 1fr;row-gap:6px}
+  .row .r-name{grid-column:1 / -1}
+  .row output{grid-column:1 / 3;text-align:start}
+  .conv-out{grid-template-columns:1fr}
+}
+@media print{
+  body{background:#fff}
+  .modal,.topbar .actions,.sync,.addrow,.del,.sight .btn,.foodbar button,#rates-reset{display:none}
+  .summary{position:static}
+  section{break-inside:avoid-page}
+  .tabs{display:none}
+  .tabpanel[hidden]{display:block}
+  .tabpanel{margin-top:40px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .route .path span{animation:fly 1.4s ease-out 1}
+  @keyframes fly{from{left:8%}to{left:50%}}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="tb-start">
+      <button class="btn ghost small keep trip-only" id="back">→ כל הטיולים</button>
+      <h1 id="page-title">הטיולים שלי</h1>
+    </div>
+    <div class="actions">
+      <span class="sync" id="sync" data-kind="busy" role="status">טוען...</span>
+      <button class="btn ghost small keep trip-only" id="share-open">שיתוף</button>
+      <button class="btn ghost small keep trip-only" id="print">הדפסה</button>
+      <button class="btn ghost small keep trip-only" id="dup">שכפול הטיול</button>
+      <button class="btn ghost small trip-only owner-only" id="del">מחיקת הטיול</button>
+      <span class="who" id="who"></span>
+      <button class="btn ghost small keep" id="logout">יציאה</button>
+    </div>
+  </div>
+
+  <!-- home: my trips -->
+  <div id="home-view">
+    <p class="lead">בוחרים טיול כדי להמשיך לתכנן אותו, או יוצרים טיול חדש.</p>
+    <div class="trips-grid" id="trips-grid"><div class="panel">טוען את הטיולים...</div></div>
+  </div>
+
+  <div id="trip-view" hidden>
+  <!-- route header -->
+  <div class="flight">
+      <div class="pass-main">
+        <div class="route">
+          <div class="code" id="dest-code">BCN</div>
+          <div class="code origin">TLV</div>
+        </div>
+        <div class="route-map" id="route-map" aria-hidden="true"></div>
+        <div class="route-names"><span>תל אביב</span><span id="dest-name">ברצלונה, ספרד</span></div>
+        <div class="route-meta" id="route-meta"></div>
+
+        <div class="fields">
+          <div class="field">
+            <label for="dest">יעד</label>
+            <select id="dest"></select>
+          </div>
+          <div class="field">
+            <label for="from">יציאה</label>
+            <input type="date" id="from">
+          </div>
+          <div class="field">
+            <label for="to">חזרה</label>
+            <input type="date" id="to">
+          </div>
+          <div class="field">
+            <label for="travelers">נוסעים</label>
+            <input type="number" id="travelers" min="1" max="30" step="1" inputmode="numeric">
+          </div>
+        </div>
+        <div id="custom-wrap" class="field">
+          <label for="custom">שם היעד</label>
+          <input type="text" id="custom" placeholder="למשל: בודפשט">
+        </div>
+        <div class="warn" id="date-warn"></div>
+      </div>
+
+      <div class="pass-stub">
+        <div>
+          <div class="stub-label">עלות משוערת לכל הטיול</div>
+          <div class="stub-total num" id="stub-total">₪0</div>
+          <div class="stub-sub" id="stub-alt"></div>
+        </div>
+        <div class="stub-grid">
+          <div><span class="stub-label">לנוסע</span><b class="num" id="stub-pp">₪0</b></div>
+          <div><span class="stub-label">ימים / לילות</span><b id="stub-days">0 / 0</b></div>
+        </div>
+      </div>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="חלקי התכנון">
+    <button class="keep" role="tab" id="tab-budget" data-tab="budget" aria-controls="panel-budget" aria-selected="false" tabindex="-1">תקציב <span class="badge" id="b-budget"></span></button>
+    <button class="keep" role="tab" id="tab-rates" data-tab="rates" aria-controls="panel-rates" aria-selected="false" tabindex="-1">מטבע</button>
+    <button class="keep" role="tab" id="tab-weather" data-tab="weather" aria-controls="panel-weather" aria-selected="false" tabindex="-1">מזג אוויר</button>
+    <button class="keep" role="tab" id="tab-recommendations" data-tab="recommendations" aria-controls="panel-recommendations" aria-selected="false" tabindex="-1">מה לראות ולאכול <span class="badge" id="b-attr"></span></button>
+    <button class="keep" role="tab" id="tab-days" data-tab="days" aria-controls="panel-days" aria-selected="false" tabindex="-1">תוכנית יומית</button>
+    <button class="keep" role="tab" id="tab-journal" data-tab="journal" aria-controls="panel-journal" aria-selected="false" tabindex="-1">יומן <span class="badge" id="b-journal"></span></button>
+    <button class="keep" role="tab" id="tab-checklist" data-tab="checklist" aria-controls="panel-checklist" aria-selected="false" tabindex="-1">לפני שיוצאים <span class="badge" id="b-checks"></span></button>
+  </nav>
+
+  <!-- weather -->
+  <section class="tabpanel" data-tab="weather" id="panel-weather" role="tabpanel" aria-labelledby="tab-weather" tabindex="0">
+    <h2>מזג האוויר בתאריכים שלכם</h2>
+    <p class="lead" id="wx-lead"></p>
+    <div class="wx" id="wx"></div>
+    <div class="wx-year" id="wx-year" aria-label="טמפרטורות ממוצעות לאורך השנה"></div>
+    <p class="hint" style="margin-top:10px">אלה ממוצעים רב־שנתיים משוערים ולא תחזית. את התחזית עצמה כדאי לבדוק כשבוע לפני הנסיעה.</p>
+  </section>
+
+  <!-- rates -->
+  <section class="tabpanel" data-tab="rates" id="panel-rates" role="tabpanel" aria-labelledby="tab-rates" tabindex="0">
+    <h2>שערי מטבע והמרה</h2>
+    <p class="lead">כל הסכומים בתכנון מחושבים לשקלים לפי השערים האלה. אפשר לעדכן אותם לשער שתקבלו בפועל.</p>
+    <div class="rates">
+      <div class="panel">
+        <div id="rate-rows"></div>
+        <p class="hint">שערי ברירת המחדל הם שערי שוק מ־29.9.2026. בבנק ובצ׳יינג׳ השער בדרך כלל פחות טוב.</p>
+        <button class="btn ghost small" id="rates-reset">החזרה לשערי ברירת המחדל</button>
+      </div>
+      <div class="panel">
+        <h3 style="margin-bottom:10px">מחשבון המרה</h3>
+        <div class="conv-in">
+          <input type="number" id="cv-amt" value="100" min="0" step="any" inputmode="decimal" aria-label="סכום להמרה">
+          <select id="cv-cur" aria-label="מטבע המקור">
+            <option value="ILS">₪ שקל</option>
+            <option value="USD">$ דולר</option>
+            <option value="EUR" selected>€ יורו</option>
+            <option value="GBP">£ לירה שטרלינג</option>
+            <option value="CZK">Kč קרונה צ׳כית</option>
+            <option value="HUF">Ft פורינט הונגרי</option>
+          </select>
+        </div>
+        <div class="conv-out">
+          <div><small>בשקלים</small><b class="num" id="cv-ils"></b></div>
+          <div><small>בדולרים</small><b class="num" id="cv-usd"></b></div>
+          <div><small>ביורו</small><b class="num" id="cv-eur"></b></div>
+          <div id="cv-loc-box" hidden><small id="cv-loc-label"></small><b class="num" id="cv-loc"></b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- budget -->
+  <section class="tabpanel" data-tab="budget" id="panel-budget" role="tabpanel" aria-labelledby="tab-budget" tabindex="0">
+    <h2>תקציב</h2>
+    <p class="lead">לכל שורה בוחרים מטבע ואיך לחשב אותה: סכום כולל, לנוסע, ללילה, ליום או לנוסע ליום. המספר של הלילות והימים נלקח מהתאריכים.</p>
+    <div class="budget">
+      <div id="budget"></div>
+      <aside class="panel summary" aria-live="polite">
+        <div class="stub-label">סה״כ</div>
+        <div class="big num" id="sum-ils">₪0</div>
+        <div class="alt" id="sum-alt"></div>
+        <div class="bar" id="sum-bar"></div>
+        <ul class="legend" id="sum-legend"></ul>
+        <div class="per">
+          <div><small>לנוסע</small><b class="num" id="sum-pp"></b></div>
+          <div><small>ליום טיול</small><b class="num" id="sum-pd"></b></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- recommendations -->
+  <section class="tabpanel" data-tab="recommendations" id="panel-recommendations" role="tabpanel" aria-labelledby="tab-recommendations" tabindex="0">
+    <div class="recs-head">
+      <div>
+        <h2 id="recs-title">מה כדאי לראות</h2>
+        <p class="lead" style="margin:0">מחירי הכניסה משוערים למבוגר ועשויים להשתנות. שווה לבדוק באתר הרשמי לפני שמזמינים.</p>
+      </div>
+    </div>
+    <div class="sights" id="sights"></div>
+
+    <h3 style="margin-top:30px">מה לאכול</h3>
+    <div class="eats" id="eats"></div>
+    <div class="foodbar" id="foodbar"></div>
+  </section>
+
+  <!-- days -->
+  <section class="tabpanel" data-tab="days" id="panel-days" role="tabpanel" aria-labelledby="tab-days" tabindex="0">
+    <h2>תוכנית יומית</h2>
+    <p class="lead">אטרקציות שמשייכים ליום בטבלת התקציב מופיעות כאן. אפשר להוסיף הערות לכל יום.</p>
+    <div id="unassigned"></div>
+    <div class="days" id="days"></div>
+  </section>
+
+  <!-- journal -->
+  <section class="tabpanel" data-tab="journal" id="panel-journal" role="tabpanel" aria-labelledby="tab-journal" tabindex="0">
+    <div class="recs-head">
+      <div>
+        <h2>יומן הטיול</h2>
+        <p class="lead" style="margin:0">מה עשיתם, מה אכלתם ומה הכי אהבתם. אפשר לצרף תמונות לכל רשומה.</p>
+      </div>
+      <button class="btn" id="j-new">רשומה חדשה</button>
+    </div>
+    <form class="panel j-form" id="j-form" hidden onsubmit="return false">
+      <h3 id="j-form-title">רשומה חדשה</h3>
+      <div class="j-grid">
+        <div class="field"><label for="j-date">תאריך</label><input type="date" id="j-date"></div>
+        <div class="field"><label for="j-place">מקום</label><input type="text" id="j-place" placeholder="למשל: שוק לה בוקריה"></div>
+        <div class="field j-wide"><label for="j-title">כותרת</label><input type="text" id="j-title" placeholder="במשפט אחד, מה היה היום?"></div>
+        <div class="field j-wide"><label for="j-text">מה קרה</label><textarea id="j-text" rows="5" placeholder="חוויות, המלצות, רגעים שלא רוצים לשכוח..."></textarea></div>
+      </div>
+      <div class="j-photos-edit" id="j-photos-edit"></div>
+      <div class="j-actions">
+        <label class="btn ghost small j-file" id="j-file-label"><input type="file" id="j-file" accept="image/*" multiple hidden>הוספת תמונות</label>
+        <span class="hint" id="j-msg" role="status"></span>
+        <span class="j-spacer"></span>
+        <button class="btn ghost small" type="button" id="j-cancel">ביטול</button>
+        <button class="btn" type="submit" id="j-save">שמירה</button>
+      </div>
+    </form>
+    <div id="j-list"></div>
+  </section>
+
+  <!-- checklist -->
+  <section class="tabpanel" data-tab="checklist" id="panel-checklist" role="tabpanel" aria-labelledby="tab-checklist" tabindex="0">
+    <h2>לפני שיוצאים</h2>
+    <div class="checks" id="checks"></div>
+  </section>
+  </div><!-- /trip-view -->
+
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="תצוגת תמונה">
+    <button class="lb-btn lb-close keep" id="lb-close" aria-label="סגירה">×</button>
+    <button class="lb-btn lb-prev keep" id="lb-prev" aria-label="התמונה הקודמת">›</button>
+    <img id="lb-img" alt="">
+    <button class="lb-btn lb-next keep" id="lb-next" aria-label="התמונה הבאה">‹</button>
+    <div class="lb-cap" id="lb-cap"></div>
+  </div>
+
+  <div class="modal ai-modal" id="ai" hidden role="dialog" aria-modal="true" aria-labelledby="ai-title">
+    <div class="modal-card ai-panel">
+      <div class="modal-head">
+        <h3 id="ai-title">תכנון טיול עם AI</h3>
+        <button class="btn ghost small keep" id="ai-close" aria-label="סגירה">×</button>
+      </div>
+      <form class="ai-form" id="ai-form" onsubmit="return false">
+        <label for="ai-req">מה מתכננים?</label>
+        <textarea id="ai-req" rows="3" placeholder="למשל: לונדון בנובמבר, זוג, אוהבים שווקים, אוכל טוב ומוזיאונים. בלי יותר מדי הליכה."></textarea>
+        <div class="ai-row">
+          <div><label for="ai-date">תאריך יציאה</label><input type="date" id="ai-date"></div>
+          <div><label for="ai-days">ימים</label><input type="number" id="ai-days" min="1" max="21" value="5" inputmode="numeric"></div>
+          <div><label for="ai-trav">נוסעים</label><input type="number" id="ai-trav" min="1" max="20" value="2" inputmode="numeric"></div>
+          <button class="btn keep" type="submit" id="ai-go">בניית תוכנית</button>
+        </div>
+      </form>
+      <div class="ai-status" id="ai-status" role="status" aria-live="polite"></div>
+      <div class="ai-plan" id="ai-plan" hidden></div>
+      <form class="ai-refine" id="ai-refine" hidden onsubmit="return false">
+        <input type="text" id="ai-change" placeholder="מה לשנות? למשל: יום 3 בלי מוזיאונים, יותר זמן בשוק" aria-label="בקשת שינוי">
+        <button class="btn ghost keep" type="submit" id="ai-change-go">עדכון התוכנית</button>
+      </form>
+      <div class="ai-actions" id="ai-actions" hidden>
+        <span class="hint">המחירים והשעות הם הערכה. כדאי לאמת לפני שמזמינים.</span>
+        <button class="btn keep" type="button" id="ai-create">יצירת הטיול מהתוכנית</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="share" hidden role="dialog" aria-modal="true" aria-labelledby="share-title">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="share-title">שיתוף הטיול</h3>
+        <button class="btn ghost small keep" id="share-close" aria-label="סגירה">×</button>
+      </div>
+      <form class="share-form owner-only" id="share-form" onsubmit="return false">
+        <p class="hint" style="margin:0 0 8px">המשתתפים צריכים להירשם לאתר קודם. אחר כך מוסיפים אותם כאן לפי כתובת המייל שאיתה נרשמו.</p>
+        <div class="share-row">
+          <input type="email" id="share-email" placeholder="מייל של המשתתף" required aria-label="מייל של המשתתף">
+          <select id="share-role" aria-label="הרשאה">
+            <option value="editor">עריכה</option>
+            <option value="viewer">צפייה בלבד</option>
+          </select>
+          <button class="btn keep" type="submit" id="share-add">הוספה</button>
+        </div>
+      </form>
+      <div class="hint" id="share-msg" role="status"></div>
+      <ul class="members" id="share-list"></ul>
+      <section class="pub" id="pub" aria-labelledby="pub-title">
+        <label class="pub-main owner-only">
+          <input type="checkbox" id="pub-on" class="keep">
+          <span><b id="pub-title">טיול פומבי</b><small>כל מי שיש לו את הקישור יכול לצפות בטיול, גם בלי להירשם. אי אפשר לערוך דרך הקישור.</small></span>
+        </label>
+        <div class="pub-opts owner-only" id="pub-opts">
+          <label><input type="checkbox" id="pub-journal" class="keep"> לכלול את היומן והתמונות</label>
+          <label><input type="checkbox" id="pub-budget" class="keep"> לכלול את התקציב והעלויות</label>
+        </div>
+        <div class="pub-link" id="pub-link" hidden>
+          <input type="text" id="pub-url" readonly aria-label="הקישור הציבורי" class="keep">
+          <button class="btn small keep" type="button" id="pub-copy">העתקת הקישור</button>
+          <a class="btn ghost small" id="pub-view" target="_blank" rel="noopener">פתיחה</a>
+        </div>
+        <div class="hint" id="pub-msg" role="status"></div>
+      </section>
+      <button class="btn ghost small keep member-only" id="share-leave">עזיבת הטיול</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="route.js"></script>
+<script>
+(function(){
+const KEY = 'trip-planner-v1';
+const DEFAULT_RATES = {USD:3.068, EUR:3.477, GBP:4.060, CZK:0.1424, HUF:0.00945};
+const RATE_CURS = [
+  {k:'USD', sym:'$', n:'דולר', unit:1},
+  {k:'EUR', sym:'€', n:'יורו', unit:1},
+  {k:'GBP', sym:'£', n:'לירה שטרלינג', unit:1},
+  {k:'CZK', sym:'Kč', n:'קרונות צ׳כיות', unit:100},
+  {k:'HUF', sym:'Ft', n:'פורינטים', unit:100}
+];
+const CUR_NAMES = {ILS:'שקלים', USD:'דולרים', EUR:'יורו', GBP:'לירות שטרלינג', CZK:'קרונות צ׳כיות', HUF:'פורינטים'};
+
+const DESTS = {
+  BCN:{name:'ברצלונה',country:'ספרד',cur:'EUR',food:50,
+    sights:[
+      ['סגרדה פמיליה',26,'הבזיליקה של גאודי. מזמינים מראש כרטיס לשעה מסוימת.'],
+      ['פארק גואל',18,'הפארק הצבעוני של גאודי, עם תצפית על העיר והים.'],
+      ['קאסה בטיו',35,'בית של גאודי בפסאג׳ דה גרסיה, עם מדריך קולי.'],
+      ['לה פדררה (קאסה מילה)',28,'גג הארובות המפורסם. יש גם סיורי ערב.'],
+      ['הרובע הגותי ואל בורן',0,'סמטאות עתיקות, הקתדרלה ושוק לה בוקריה בקרבת מקום.'],
+      ['רכבל מונז׳ואיק',16,'עלייה לטירה על ההר, עם נוף לנמל.']],
+    eats:[['טאפאס','מנות קטנות בבר, בעיקר בערב'],['פאייה','עדיף במסעדה ליד הים, בצהריים'],['פאן קון טומטה','לחם קלוי עם עגבנייה ושמן זית'],['צ׳ורוס עם שוקולד','לקינוח או לארוחת בוקר']]},
+  MAD:{name:'מדריד',country:'ספרד',cur:'EUR',food:45,
+    sights:[
+      ['מוזיאון הפראדו',15,'ולסקס, גויה ובוש. בשעתיים האחרונות של היום הכניסה חינם.'],
+      ['הארמון המלכותי',14,'מהגדולים באירופה. להזמין מראש ולהגיע מוקדם.'],
+      ['מוזיאון ריינה סופיה',12,'אמנות מודרנית, ובראשה גרניקה של פיקאסו.'],
+      ['סיור באצטדיון סנטיאגו ברנבאו',35,'האצטדיון המחודש של ריאל מדריד, עם המוזיאון.'],
+      ['פארק רטירו',0,'אגם עם סירות משוטים וארמון הזכוכית.'],
+      ['פלאסה מאיור ושוק סן מיגל',0,'הכיכר המרכזית ושוק אוכל גורמה בסמוך.']],
+    eats:[['צ׳ורוס עם שוקולד','בבית קפה ותיק, גם מאוחר בלילה'],['בוקדיו דה קלמרס','כריך קלמרי מטוגן ליד פלאסה מאיור'],['קוסידו מדרילניו','תבשיל חומוס ובשר, בצהריים'],['ג׳אמון איבריקו','עם כוס יין בבר טאפאס']]},
+  FCO:{name:'רומא',country:'איטליה',cur:'EUR',food:50,
+    sights:[
+      ['הקולוסיאום, הפורום והפלטין',18,'כרטיס אחד לשלושת האתרים. מזמינים מראש.'],
+      ['מוזיאוני הוותיקן והקפלה הסיסטינית',25,'כולל דמי הזמנה. להגיע מוקדם בבוקר.'],
+      ['גלריה בורגזה',17,'כניסה רק בהזמנה מראש, לחלונות זמן של שעתיים.'],
+      ['הפנתיאון',5,'מקדש רומי שמור להפליא במרכז העיר.'],
+      ['מזרקת טרווי ופיאצה נבונה',0,'מסלול הליכה ערבי בין הכיכרות.'],
+      ['טרסטוורה',0,'שכונה ציורית עם מסעדות מקומיות.']],
+    eats:[['קרבונרה','פסטה עם ביצה, גואנצ׳לה ופקורינו'],['קאצ׳ו א פפה','פסטה עם פקורינו ופלפל שחור'],['פיצה אל טאליו','פיצה במשקל, לארוחה מהירה'],['ג׳לאטו','מחפשים גלידריות עם מיכלים סגורים']]},
+  CDG:{name:'פריז',country:'צרפת',cur:'EUR',food:65,
+    sights:[
+      ['מגדל אייפל (עד הפסגה)',36,'במעלית עד הקומה העליונה. זול יותר במדרגות לקומה השנייה.'],
+      ['הלובר',32,'המחיר לתיירים מחוץ לאיחוד האירופי. מזמינים שעת כניסה.'],
+      ['ארמון ורסאי',21,'חצי יום לפחות, עם הגנים. נסגר בימי שני.'],
+      ['מוזיאון אורסיי',16,'אימפרסיוניסטים בתחנת רכבת לשעבר.'],
+      ['שייט על הסן',17,'שעה על המים, יפה במיוחד בשקיעה.'],
+      ['מונמרטר וסקרה-קר',0,'גבעת האמנים ותצפית על כל העיר.']],
+    eats:[['קרואסון ופן או שוקולה','מבולנז׳רי שכונתית, בבוקר'],['סטייק פריט','ארוחה קלאסית בביסטרו'],['קרפ','מדוכן רחוב או בקרפרי'],['גבינות ויין','מחנות גבינות, לפיקניק בפארק']]},
+  LHR:{name:'לונדון',country:'בריטניה',cur:'GBP',food:60,
+    sights:[
+      ['המוזיאון הבריטי',0,'אבן הרוזטה ומצרים העתיקה. הכניסה חינם.'],
+      ['מצודת לונדון',35,'תכשיטי הכתר וסיורי השומרים. חצי יום.'],
+      ['לונדון איי',33,'גלגל ענק על התמזה. זול יותר בהזמנה מקוונת.'],
+      ['מנזר וסטמינסטר',30,'מקום ההכתרות. סגור לתיירים בימי ראשון.'],
+      ['קתדרלת סנט פול',26,'עלייה לכיפה עם נוף על העיר.'],
+      ['שוק בורו והסאות׳ בנק',0,'אוכל רחוב, ואחר כך הליכה לאורך הנהר עד טייט מודרן.']],
+    eats:[['פיש אנד צ׳יפס','דג בבלילה עם צ׳יפס, בפאב או בדוכן'],['ארוחת בוקר אנגלית','ביצים, שעועית, פטריות ונקניקיות'],['סאנדיי רוסט','צלי עם ירקות ויורקשייר פודינג, בפאב ביום ראשון'],['תה של מנחה','תה, סקונס וכריכים קטנים במלון']]},
+  AMS:{name:'אמסטרדם',country:'הולנד',cur:'EUR',food:60,
+    sights:[
+      ['רייקסמוזיאום',25,'רמברנדט וורמיר. לפחות שלוש שעות.'],
+      ['מוזיאון ואן גוך',22,'כניסה בשעה קבועה, מזמינים מראש.'],
+      ['בית אנה פרנק',16,'הכרטיסים נפתחים כשישה שבועות מראש ונגמרים מהר.'],
+      ['שייט בתעלות',18,'כשעה בין התעלות של מרכז העיר.'],
+      ['תצפית A\'DAM Lookout',17,'מעבר למעבורת החינמית, עם נדנדה מעל התהום.'],
+      ['פארק פונדל',0,'הפארק הגדול של העיר, מתאים לאופניים.']],
+    eats:[['סטרופוואפל','וופל עם סירופ קרמל, חם מהשוק'],['ביטרבאלן','כדורי קרוקט מטוגנים לצד בירה'],['פאנקייק הולנדי','דק וגדול, מתוק או מלוח'],['הרינג','דג כבוש מדוכן, למי שאוהב']]},
+  ATH:{name:'אתונה',country:'יוון',cur:'EUR',food:40,
+    sights:[
+      ['האקרופוליס',30,'להגיע בפתיחה, לפני החום וההמונים.'],
+      ['מוזיאון האקרופוליס',20,'מתחת לגבעה, עם רצפות זכוכית מעל חפירות.'],
+      ['האגורה העתיקה',20,'מקדש הפייסטוס השמור ביותר ביוון.'],
+      ['פלאקה ואנאפיוטיקה',0,'סמטאות לבנות מתחת לאקרופוליס.'],
+      ['רכבל גבעת ליקבטוס',10,'התצפית הגבוהה בעיר, יפה בשקיעה.'],
+      ['מקדש פוסידון בכף סוניון',20,'כשעה נסיעה לאורך החוף, לשקיעה.']],
+    eats:[['סובלאקי וגירוס','בפיתה, מהיר וזול'],['מוסקה','מאפה חצילים ובשר בטברנה'],['סלט יווני','עם פטה ושמן זית מקומי'],['לוקומדס','סופגניות קטנות עם דבש']]},
+  LIS:{name:'ליסבון',country:'פורטוגל',cur:'EUR',food:40,
+    sights:[
+      ['מנזר ז׳רונימוש',18,'בבלם, ליד מאפיית הפסטל דה נאטה המפורסמת.'],
+      ['מגדל בלם',12,'מבצר על הנהר, מבחוץ מרשים לא פחות.'],
+      ['חשמלית 28',3.2,'נסיעה בין השכונות הוותיקות. עדיף מוקדם בבוקר.'],
+      ['האושיאנריום',25,'מהגדולים באירופה, מתאים גם לילדים.'],
+      ['ארמון פנה בסינטרה',20,'יום טיול ברכבת מליסבון.'],
+      ['אלפמה ותצפיות המירדורו',0,'השכונה העתיקה, פאדו בערב.']],
+    eats:[['פסטל דה נאטה','מאפה קרם חם עם קינמון'],['בקלאו','דג בקלה מיובש, מבושל בעשרות דרכים'],['סרדינים צלויים','בעיקר בקיץ, במסעדות שכונה'],['ביפנה','כריך בשר חזיר מתובל']]},
+  VIE:{name:'וינה',country:'אוסטריה',cur:'EUR',food:55,
+    sights:[
+      ['ארמון שנברון',32,'הסיור הגדול בחדרים, והגנים בחינם.'],
+      ['בלוודר העליון',20,'הנשיקה של קלימט ונוף לגנים.'],
+      ['מוזיאון סיסי וחדרי הקיסר',24,'בארמון הופבורג במרכז העיר.'],
+      ['הגלגל הענק בפראטר',15,'גלגל היסטורי בפארק השעשועים.'],
+      ['סיור בבית האופרה',13,'סיור מודרך; כרטיסי עמידה להופעה זולים מאוד.'],
+      ['נאשמרקט',0,'שוק אוכל ודוכנים, טוב לארוחת צהריים.']],
+    eats:[['שניצל וינאי','עגל דק ומטוגן, עם סלט תפוחי אדמה'],['זאכר טורטה','עוגת שוקולד עם ריבת משמש'],['אפפלשטרודל','בבית קפה וינאי קלאסי'],['נקניקייה מדוכן','ארוחה מהירה בלילה']]},
+  PRG:{name:'פראג',country:'צ׳כיה',cur:'CZK',food:1200,
+    sights:[
+      ['מצודת פראג',450,'הקתדרלה, הארמון וסמטת הזהב. חצי יום לפחות.'],
+      ['בית העירייה העתיק והשעון האסטרונומי',300,'עלייה למגדל עם נוף על כיכר העיר העתיקה.'],
+      ['המוזיאון היהודי ורובע יוספוב',650,'בתי הכנסת העתיקים ובית הקברות היהודי.'],
+      ['שייט על נהר הוולטבה',400,'כשעה על הנהר, מתחת לגשר קרל.'],
+      ['מגדל התצפית בגבעת פטרשין',220,'עלייה ברכבל ותצפית על כל העיר.'],
+      ['גשר קרל וכיכר העיר העתיקה',0,'כדאי מוקדם בבוקר, לפני ההמונים.']],
+    eats:[['גולאש עם כופתאות','בפאב צ׳כי מסורתי'],['סביצ׳קובה','בקר ברוטב שמנת וירקות, עם כופתאות'],['טרדלניק','מאפה מתוק על שיפוד, בעיקר לתיירים'],['בירה צ׳כית','פילזנר מהחבית, זולה מאוד']]},
+  BUD:{name:'בודפשט',country:'הונגריה',cur:'HUF',food:17000,
+    sights:[
+      ['בניין הפרלמנט',13000,'סיור מודרך בלבד, כדאי להזמין מראש.'],
+      ['מרחצאות סצ׳ני',13500,'בריכות חמות בחוץ, גם בחורף. להביא מגבת וכפכפים.'],
+      ['מצודת הדייגים וגבעת המצודה',1500,'המרפסות העליונות בתשלום, הנוף מלמטה חינם.'],
+      ['בית הכנסת הגדול ברחוב דוהאני',10000,'הגדול באירופה, עם גן זיכרון.'],
+      ['שייט על הדנובה',5500,'בערב, כשהפרלמנט והגשרים מוארים.'],
+      ['השוק הגדול ופאבי החורבות',0,'שוק מקורה ביום, וברים ברובע היהודי בלילה.']],
+    eats:[['גולאש','מרק בשר ופפריקה, הסמל של הונגריה'],['לנגוש','בצק מטוגן עם שמנת חמוצה וגבינה'],['פפריקש עוף','עוף ברוטב פפריקה ושמנת, עם נוקדלי'],['קורטושקלאץ׳','מאפה ארובה חם עם קינמון']]},
+  JFK:{name:'ניו יורק',country:'ארה״ב',cur:'USD',food:90,
+    sights:[
+      ['פסל החירות ואליס איילנד',25,'מעבורת מבאטרי פארק. כתר הפסל בהזמנה נפרדת.'],
+      ['אמפייר סטייט בילדינג',44,'תצפית מהקומה ה־86. בשקיעה יקר יותר.'],
+      ['המטרופוליטן',30,'אפשר לבלות בו יום שלם.'],
+      ['MoMA',30,'אמנות מודרנית: ואן גוך, פיקאסו, וורהול.'],
+      ['מוזיאון ואנדרטת 11 בספטמבר',33,'האנדרטה בחוץ פתוחה בחינם.'],
+      ['סנטרל פארק וההיי ליין',0,'שני מסלולי הליכה שונים לגמרי.']],
+    eats:[['פיצה ניו יורקית','משולש דק ומתקפל'],['בייגל עם קרם צ׳יז','לארוחת בוקר'],['כריך פסטרמה','בדלי יהודי ותיק'],['צ׳יזקייק','הגרסה הניו יורקית, כבדה ועשירה']]},
+  OTHER:{name:'',country:'',cur:'EUR',food:50,sights:[],eats:[]}
+};
+
+// Approximate long-term monthly normals: average high, average low (°C), days with rain
+const CLIMATE = {
+  BCN:{hi:[15,15,17,19,22,26,28,29,26,22,18,15],lo:[9,9,11,13,16,20,23,23,20,17,12,9],rain:[4,4,4,6,6,4,2,4,5,6,5,5]},
+  FCO:{hi:[12,13,16,19,24,28,31,31,27,22,16,13],lo:[3,4,6,8,12,16,18,19,15,12,7,4],rain:[7,7,7,8,6,4,2,3,5,8,9,8]},
+  CDG:{hi:[7,8,12,16,20,23,25,25,21,16,11,8],lo:[3,3,5,7,11,14,16,16,13,10,6,4],rain:[10,9,10,9,9,8,7,7,8,9,10,11]},
+  AMS:{hi:[6,7,10,14,18,20,23,22,19,15,10,7],lo:[1,1,3,5,9,11,14,13,11,8,4,2],rain:[12,10,11,9,9,9,9,10,11,12,13,12]},
+  ATH:{hi:[13,14,16,20,25,30,33,33,29,24,19,15],lo:[7,7,9,12,16,21,23,23,20,16,12,9],rain:[6,5,5,3,2,1,1,1,1,3,5,6]},
+  LIS:{hi:[15,16,19,20,22,26,28,29,27,23,18,15],lo:[8,9,11,12,14,17,18,19,18,15,12,9],rain:[10,8,7,8,6,2,1,1,4,8,9,10]},
+  VIE:{hi:[3,5,10,16,21,24,26,26,21,15,8,4],lo:[-2,-1,2,6,11,14,16,16,12,7,3,-1],rain:[7,7,8,7,9,9,9,8,7,6,8,8]},
+  MAD:{hi:[10,12,16,18,22,28,32,31,26,19,13,10],lo:[3,3,6,7,11,16,19,19,15,10,6,3],rain:[6,5,4,6,6,3,1,1,3,6,6,6]},
+  LHR:{hi:[8,9,12,15,18,21,24,23,20,16,11,9],lo:[3,3,4,6,9,12,14,14,12,9,5,3],rain:[11,9,9,9,8,8,7,8,8,10,10,10]},
+  PRG:{hi:[1,3,8,14,19,22,24,24,19,13,6,2],lo:[-4,-3,0,3,8,11,13,13,9,5,1,-3],rain:[7,6,7,6,8,9,8,8,6,6,7,7]},
+  BUD:{hi:[2,5,11,17,22,26,28,28,23,16,8,3],lo:[-3,-2,1,6,11,14,16,16,12,7,3,-1],rain:[7,6,7,7,9,8,7,7,6,6,8,8]},
+  JFK:{hi:[4,6,10,17,22,27,29,28,25,18,12,6],lo:[-3,-2,2,7,12,18,21,20,17,10,5,0],rain:[11,9,11,11,11,10,10,9,8,8,9,10]}
+};
+function renderRoute(animate){
+  const box = $('#route-map'); if (!box) return;
+  const coords = tripCoords(S);
+  box.innerHTML = routeSVG(S.dest, Math.max(300, Math.round(box.clientWidth || 640)), Math.round(box.clientHeight || 150), {coords});
+  if (coords) {
+    const km = distKm(AIRPORTS.TLV, coords);
+    const mins = Math.round((km / 820 + 0.5) * 6) * 10, h = Math.floor(mins / 60), m = mins % 60;
+    const hTxt = h === 1 ? 'שעה' : h === 2 ? 'שעתיים' : h + ' שעות';
+    $('#route-meta').innerHTML = `<span><b class="num">${(Math.round(km/10)*10).toLocaleString('he-IL')}</b> ק״מ בקו אווירי</span>
+      <span>כ־<b>${hTxt}${m ? ' ו־' + m + ' דקות' : ''}</b> טיסה ישירה</span>`;
+  } else $('#route-meta').innerHTML = '<span>אין נתוני מיקום ליעד הזה</span>';
+  const arc = box.querySelector('.rt-arc:not(.ghost)');
+  if (arc && animate) {
+    box.style.setProperty('--len', Math.ceil(arc.getTotalLength()));
+    box.classList.remove('draw'); void box.offsetWidth; box.classList.add('draw');
+  }
+}
+
+const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const MONTHS_S = ['ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
+
+const CATS = [
+  {k:'flight',n:'טיסות',c:'var(--blue)'},
+  {k:'hotel',n:'לינה',c:'var(--red)'},
+  {k:'attr',n:'אטרקציות',c:'var(--amber)'},
+  {k:'food',n:'אוכל',c:'var(--green)'},
+  {k:'transport',n:'תחבורה',c:'var(--violet)'},
+  {k:'other',n:'שונות',c:'var(--gray)'}
+];
+const PERS = {total:'סה״כ',person:'לנוסע',night:'ללילה',day:'ליום',personDay:'לנוסע ליום'};
+const CUR_SYM = {ILS:'₪',USD:'$',EUR:'€',GBP:'£',CZK:'Kč',HUF:'Ft'};
+
+const CHECKS = [
+  'דרכון בתוקף לפחות שישה חודשים מיום החזרה',
+  'בדיקת דרישות כניסה ליעד (למשל ESTA לארה״ב)',
+  'ביטוח נסיעות לחו״ל, כולל ביטול טיסה',
+  'כרטיס אשראי בלי עמלת המרה, או מעט מזומן במטבע המקומי',
+  'הזמנה מראש לאטרקציות המבוקשות',
+  'חבילת גלישה או eSIM',
+  'מתאם לשקע החשמל ביעד',
+  'צילום של הדרכון וההזמנות בענן',
+  'צ׳ק־אין מקוון והורדת כרטיסי העלייה למטוס',
+  'העברת מסלול הטיול למישהו בבית'
+];
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2,9);
+const iso = d => d.toISOString().slice(0,10);
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+function fmt(v, cur){
+  return new Intl.NumberFormat('he-IL',{style:'currency',currency:cur,currencyDisplay:'narrowSymbol',maximumFractionDigits: Math.abs(v) < 100 && cur!=='ILS' ? 2 : 0}).format(v||0);
+}
+
+function defaults(){
+  const now = new Date();
+  return {
+    dest:'BCN', custom:'',
+    from: iso(addDays(now,30)), to: iso(addDays(now,36)),
+    travelers:2,
+    rates:{...DEFAULT_RATES},
+    items:[
+      {id:uid(),cat:'flight',name:'טיסה הלוך־חזור',amount:450,cur:'USD',per:'person'},
+      {id:uid(),cat:'flight',name:'כבודה נוספת',amount:0,cur:'USD',per:'person'},
+      {id:uid(),cat:'hotel',name:'מלון',amount:150,cur:'EUR',per:'night'},
+      {id:uid(),cat:'food',name:'ארוחות ושתייה',amount:50,cur:'EUR',per:'personDay'},
+      {id:uid(),cat:'transport',name:'הסעה משדה התעופה ובחזרה',amount:60,cur:'EUR',per:'total'},
+      {id:uid(),cat:'transport',name:'תחבורה ציבורית ומוניות',amount:10,cur:'EUR',per:'personDay'},
+      {id:uid(),cat:'other',name:'ביטוח נסיעות',amount:40,cur:'USD',per:'person'},
+      {id:uid(),cat:'other',name:'חניה בנתב״ג',amount:0,cur:'ILS',per:'total'}
+    ],
+    notes:{}, checks:{}
+  };
+}
+
+let S = defaults();
+function normalize(x){
+  if (!x || !Array.isArray(x.items)) return defaults();
+  x.notes = x.notes || {}; x.checks = x.checks || {}; x.rates = {...DEFAULT_RATES, ...(x.rates || {})};
+  return x;
+}
+function save(){ schedulePersist(); }
+
+function diffDays(){
+  const a = Date.parse(S.from), b = Date.parse(S.to);
+  if (isNaN(a) || isNaN(b)) return 0;
+  return Math.round((b-a)/864e5);
+}
+const nights = () => Math.max(0, diffDays());
+const days = () => Math.max(1, diffDays()+1);
+const T = () => Math.max(1, parseInt(S.travelers,10) || 1);
+const rate = cur => cur === 'ILS' ? 1 : (+S.rates[cur] || 0);
+function mult(per){
+  return {total:1, person:T(), night:nights(), day:days(), personDay:T()*days()}[per] ?? 1;
+}
+const itemILS = it => (+it.amount || 0) * rate(it.cur) * mult(it.per);
+const destInfo = () => DESTS[S.dest] || DESTS.OTHER;
+const destLabel = () => S.dest === 'OTHER' ? (S.custom || 'היעד') : destInfo().name;
+
+/* ---------- pass ---------- */
+let routeAnim = false;
+let routeRaf = 0;
+window.addEventListener('resize', () => { cancelAnimationFrame(routeRaf); routeRaf = requestAnimationFrame(() => { if (document.body.dataset.view === 'trip') renderRoute(false); }); });
+function initPass(){
+  const sel = $('#dest');
+  sel.innerHTML = Object.entries(DESTS).map(([k,d]) =>
+    `<option value="${k}">${k==='OTHER' ? 'יעד אחר' : esc(d.name + ', ' + d.country)}</option>`).join('');
+  sel.value = S.dest;
+  $('#from').value = S.from; $('#to').value = S.to;
+  $('#travelers').value = S.travelers;
+  $('#custom').value = S.custom;
+
+  sel.addEventListener('change', () => { S.dest = sel.value; delete S.geo; routeAnim = true; save(); renderPass(); renderRecs(); renderSummary(); });
+  $('#custom').addEventListener('input', e => { S.custom = e.target.value; save(); renderPass(); renderRecs(); });
+  $('#from').addEventListener('change', e => { S.from = e.target.value; onDates(); });
+  $('#to').addEventListener('change', e => { S.to = e.target.value; onDates(); });
+  $('#travelers').addEventListener('input', e => { S.travelers = e.target.value; save(); refreshNumbers(); });
+}
+function onDates(){ save(); renderPass(); renderBudget(); renderSummary(); renderDays(); }
+
+function renderPass(){
+  const d = destInfo();
+  const codeEl = $('#dest-code');
+  if (S.dest === 'OTHER'){
+    const code = tripCode(S);
+    codeEl.textContent = code;
+    codeEl.classList.toggle('custom', !/^[A-Z]{3}$/.test(code));
+    $('#dest-name').textContent = (S.custom || 'יעד אחר') + (S.geo && S.geo.country ? ', ' + S.geo.country : '');
+    $('#custom-wrap').classList.add('on');
+  } else {
+    codeEl.textContent = S.dest;
+    codeEl.classList.remove('custom');
+    $('#dest-name').textContent = d.name + ', ' + d.country;
+    $('#custom-wrap').classList.remove('on');
+  }
+  $('#date-warn').textContent = diffDays() < 0 ? 'תאריך החזרה מוקדם מתאריך היציאה. החישוב מניח יום אחד בלי לילות.' : '';
+  $('#stub-days').textContent = days() + ' / ' + nights();
+  renderWeather();
+  renderConv();
+  renderRoute(routeAnim); routeAnim = false;
+}
+
+/* ---------- weather ---------- */
+function tripMonths(){
+  const a = Date.parse(S.from), b = Date.parse(S.to);
+  const counts = new Map();
+  if (isNaN(a)) return counts;
+  const end = isNaN(b) || b < a ? a : b;
+  for (let t = a, i = 0; t <= end && i < 400; t += 864e5, i++) {
+    const m = new Date(t).getMonth(); counts.set(m, (counts.get(m) || 0) + 1);
+  }
+  return counts;
+}
+function wxTips(hi, lo, rain){
+  const t = [];
+  if (hi >= 30) t.push('חם מאוד: כובע, קרם הגנה ומים, ואתרים פתוחים בבוקר');
+  else if (hi >= 25) t.push('חם: בגדים קלים ומשקפי שמש');
+  else if (hi >= 18) t.push('נעים: שכבה דקה לערב');
+  else if (hi >= 10) t.push('קריר: סוודר ומעיל קל');
+  else t.push('קר: מעיל חם, כפפות וכובע');
+  if (lo <= 0) t.push('קרה בלילות, ייתכן שלג');
+  if (rain >= 9) t.push('ימי גשם רבים: מטרייה ונעליים עמידות');
+  else if (rain >= 6) t.push('כדאי מטרייה מתקפלת');
+  return t.join('. ') + '.';
+}
+function renderWeather(){
+  const c = CLIMATE[S.dest];
+  const months = tripMonths();
+  if (!c) {
+    $('#wx-lead').textContent = 'אין נתוני מזג אוויר מוכנים ליעד הזה.';
+    $('#wx').innerHTML = ''; $('#wx-year').style.display = 'none';
+    return;
+  }
+  $('#wx-lead').textContent = 'טמפרטורות ממוצעות ב' + destLabel() + ' בחודשים של הטיול.';
+  $('#wx-year').style.display = '';
+  $('#wx').innerHTML = [...months.entries()].map(([m, n]) => `<div class="wx-card">
+      <h3>${MONTHS[m]}<small>${n === 1 ? 'יום אחד בטיול' : n + ' ימים בטיול'}</small></h3>
+      <div class="wx-temp"><b class="num">${c.hi[m]}°</b><span class="num">${c.lo[m]}°</span></div>
+      <p>ביום ${c.hi[m]}°, בלילה ${c.lo[m]}°. כ־${c.rain[m]} ימי גשם בחודש.</p>
+      <p class="tip">${wxTips(c.hi[m], c.lo[m], c.rain[m])}</p>
+    </div>`).join('');
+  const MIN = -8, MAX = 36, pos = v => (v - MIN) / (MAX - MIN) * 100;
+  $('#wx-year').innerHTML = c.hi.map((h, m) => `<div class="wx-col ${months.has(m) ? 'on' : ''}" title="${MONTHS[m]}: ${h}° / ${c.lo[m]}°">
+      <span class="num">${h}°</span>
+      <div class="wx-track"><div class="wx-bar" style="bottom:${pos(c.lo[m])}%;top:${100 - pos(h)}%"></div></div>
+      <span>${MONTHS_S[m]}</span>
+    </div>`).join('');
+}
+
+/* ---------- rates & converter ---------- */
+function initRates(){
+  $('#rate-rows').innerHTML = RATE_CURS.map(c => `<div class="rate-row"><span class="sym">${c.sym}</span>
+    <label for="rate-${c.k}">${c.unit} ${c.n} =</label>
+    <input type="number" id="rate-${c.k}" data-rate="${c.k}" step="0.001" min="0" inputmode="decimal"><span>₪</span></div>`).join('');
+  fillRates();
+  $('#rate-rows').addEventListener('input', e => {
+    const k = e.target.dataset.rate; if (!k) return;
+    const unit = RATE_CURS.find(c => c.k === k).unit;
+    S.rates[k] = (parseFloat(e.target.value) || 0) / unit;
+    save(); refreshNumbers(); renderConv();
+  });
+  $('#rates-reset').addEventListener('click', () => {
+    S.rates = {...DEFAULT_RATES}; fillRates();
+    save(); refreshNumbers(); renderConv();
+  });
+  $('#cv-amt').addEventListener('input', renderConv);
+  $('#cv-cur').addEventListener('change', renderConv);
+}
+function fillRates(){
+  RATE_CURS.forEach(c => { const el = $('#rate-' + c.k); if (el) el.value = +((S.rates[c.k] || 0) * c.unit).toFixed(4); });
+}
+function renderConv(){
+  const a = parseFloat($('#cv-amt').value) || 0;
+  const ils = a * rate($('#cv-cur').value);
+  $('#cv-ils').textContent = fmt(ils,'ILS');
+  $('#cv-usd').textContent = S.rates.USD ? fmt(ils/S.rates.USD,'USD') : '—';
+  $('#cv-eur').textContent = S.rates.EUR ? fmt(ils/S.rates.EUR,'EUR') : '—';
+  const lc = destInfo().cur, box = $('#cv-loc-box');
+  box.hidden = ['ILS','USD','EUR'].includes(lc);
+  if (!box.hidden) { $('#cv-loc-label').textContent = 'ב' + CUR_NAMES[lc]; $('#cv-loc').textContent = rate(lc) ? fmt(ils/rate(lc), lc) : '—'; }
+}
+
+/* ---------- budget ---------- */
+function rowHTML(it){
+  const isAttr = it.cat === 'attr';
+  const dayOpts = isAttr ? `<select class="r-day" aria-label="יום בטיול"><option value="0">בלי יום</option>${
+    Array.from({length:Math.min(days(),60)},(_,i)=>`<option value="${i+1}" ${+it.day===i+1?'selected':''}>יום ${i+1}</option>`).join('')}</select>` : '';
+  return `<div class="row ${isAttr?'':'noday'}" data-id="${it.id}">
+    <input class="r-name" value="${esc(it.name)}" aria-label="תיאור" placeholder="תיאור">
+    <input class="r-amt" type="number" min="0" step="any" inputmode="decimal" value="${it.amount}" aria-label="סכום">
+    <select class="r-cur" aria-label="מטבע">${Object.entries(CUR_SYM).map(([k,s])=>`<option value="${k}" ${it.cur===k?'selected':''}>${s}</option>`).join('')}</select>
+    <select class="r-per" aria-label="אופן החישוב">${Object.entries(PERS).map(([k,s])=>`<option value="${k}" ${it.per===k?'selected':''}>${s}</option>`).join('')}</select>
+    ${dayOpts}
+    <output class="r-sum num">${fmt(itemILS(it),'ILS')}</output>
+    <button class="del" aria-label="מחיקת השורה" title="מחיקה">×</button>
+  </div>`;
+}
+function renderBudget(){
+  $('#budget').innerHTML = CATS.map(c => {
+    const rows = S.items.filter(i => i.cat === c.k);
+    return `<div class="cat" data-cat="${c.k}">
+      <div class="cat-head" style="--c:${c.c}"><h3>${c.n}</h3><span class="sub num" data-sub="${c.k}"></span></div>
+      <div class="rows">${rows.length ? rows.map(rowHTML).join('') :
+        `<div class="empty">${c.k==='attr' ? 'עדיין אין אטרקציות. אפשר להוסיף מההמלצות למטה או שורה משלכם.' : 'אין שורות.'}</div>`}</div>
+      <div class="cat-foot"><button class="addrow" data-add="${c.k}">הוספת שורה</button></div>
+    </div>`;
+  }).join('');
+  refreshNumbers();
+  enforceRO();
+}
+function findItem(el){ const r = el.closest('.row'); return r ? S.items.find(i => i.id === r.dataset.id) : null; }
+
+function initBudget(){
+  const b = $('#budget');
+  b.addEventListener('input', e => {
+    const it = findItem(e.target); if (!it) return;
+    if (e.target.classList.contains('r-name')) { it.name = e.target.value; save(); if (it.cat==='attr') renderDays(); return; }
+    if (e.target.classList.contains('r-amt')) it.amount = e.target.value;
+    save(); refreshNumbers();
+  });
+  b.addEventListener('change', e => {
+    const it = findItem(e.target); if (!it) return;
+    if (e.target.classList.contains('r-cur')) it.cur = e.target.value;
+    if (e.target.classList.contains('r-per')) it.per = e.target.value;
+    if (e.target.classList.contains('r-day')) { it.day = +e.target.value; renderDays(); }
+    save(); refreshNumbers();
+  });
+  b.addEventListener('click', e => {
+    if (e.target.classList.contains('del')) {
+      const it = findItem(e.target); S.items = S.items.filter(i => i !== it);
+      save(); renderBudget(); renderRecs(); renderDays(); return;
+    }
+    const add = e.target.dataset.add;
+    if (add) {
+      const cur = destInfo().cur;
+      const per = {flight:'person',hotel:'night',attr:'person',food:'personDay',transport:'total',other:'total'}[add];
+      const it = {id:uid(),cat:add,name:'',amount:0,cur,per,day:0};
+      S.items.push(it); save(); renderBudget();
+      const row = document.querySelector(`.row[data-id="${it.id}"] .r-name`); if (row) row.focus();
+    }
+  });
+}
+
+function totals(){
+  const by = {}; CATS.forEach(c => by[c.k] = 0);
+  S.items.forEach(i => { by[i.cat] = (by[i.cat]||0) + itemILS(i); });
+  const all = Object.values(by).reduce((a,b)=>a+b,0);
+  return {by, all};
+}
+function refreshNumbers(){
+  document.querySelectorAll('.row').forEach(r => {
+    const it = S.items.find(i => i.id === r.dataset.id);
+    if (it) r.querySelector('.r-sum').textContent = fmt(itemILS(it),'ILS');
+  });
+  renderSummary();
+}
+function altLine(ils){
+  const parts = [];
+  if (S.rates.USD) parts.push(fmt(ils/S.rates.USD,'USD'));
+  if (S.rates.EUR) parts.push(fmt(ils/S.rates.EUR,'EUR'));
+  return parts.map(p => `<span class="num">${p}</span>`).join(' או ');
+}
+function renderSummary(){
+  const {by, all} = totals();
+  document.querySelectorAll('[data-sub]').forEach(el => el.textContent = fmt(by[el.dataset.sub],'ILS'));
+  $('#sum-ils').textContent = fmt(all,'ILS');
+  $('#sum-alt').innerHTML = altLine(all);
+  $('#sum-bar').innerHTML = all > 0 ? CATS.filter(c => by[c.k] > 0).map(c =>
+    `<i style="width:${by[c.k]/all*100}%;background:${c.c}" title="${c.n}"></i>`).join('') : '';
+  $('#sum-legend').innerHTML = CATS.map(c => `<li><span class="dot" style="background:${c.c}"></span><span>${c.n}</span>
+    <span class="num">${fmt(by[c.k],'ILS')}</span><span class="pct">${all>0?Math.round(by[c.k]/all*100):0}%</span></li>`).join('');
+  $('#sum-pp').textContent = fmt(all/T(),'ILS');
+  $('#sum-pd').textContent = fmt(all/days(),'ILS');
+  $('#stub-total').textContent = fmt(all,'ILS');
+  $('#stub-alt').innerHTML = altLine(all);
+  $('#stub-pp').textContent = fmt(all/T(),'ILS');
+  $('#stub-days').textContent = days() + ' / ' + nights();
+  updateBadges();
+}
+
+/* ---------- recommendations ---------- */
+function renderRecs(){
+  const d = destInfo();
+  $('#recs-title').textContent = 'מה כדאי לראות ב' + destLabel();
+  if (!d.sights.length){
+    $('#sights').innerHTML = `<div class="panel" style="grid-column:1/-1">אין עדיין המלצות מוכנות ליעד הזה. אפשר להוסיף אטרקציות בטבלת התקציב, בקטגוריית האטרקציות.</div>`;
+    $('#eats').innerHTML = ''; $('#eats').style.display = 'none'; $('#foodbar').innerHTML = '';
+    return;
+  }
+  $('#eats').style.display = '';
+  $('#sights').innerHTML = d.sights.map((s,i) => {
+    const src = S.dest + ':' + i;
+    const added = S.items.some(it => it.src === src);
+    return `<article class="sight ${added?'added':''}">
+      <h3>${esc(s[0])}</h3>
+      <p>${esc(s[2])}</p>
+      <div class="meta">
+        <span class="price num">${s[1] ? fmt(s[1], d.cur) : 'חינם'}</span>
+        <button class="btn small ${added?'on':''}" data-src="${src}">${added ? 'נוסף לתקציב' : 'הוספה לתקציב'}</button>
+      </div>
+    </article>`;
+  }).join('');
+  $('#eats').innerHTML = d.eats.map(e => `<div class="eat"><b>${esc(e[0])}</b><span>${esc(e[1])}</span></div>`).join('');
+  $('#foodbar').innerHTML = `<span class="hint">תקציב אוכל מקובל ב${esc(d.name)}: בערך <span class="num">${fmt(d.food,d.cur)}</span> לנוסע ליום, במסעדות בינוניות.</span>
+    <button class="btn ghost small" id="apply-food">שימוש בסכום הזה בתקציב</button>`;
+  enforceRO();
+}
+function initRecs(){
+  $('#sights').addEventListener('click', e => {
+    const src = e.target.dataset.src; if (!src) return;
+    const existing = S.items.find(it => it.src === src);
+    if (existing) { S.items = S.items.filter(it => it !== existing); }
+    else {
+      const [k,i] = src.split(':'); const s = DESTS[k].sights[+i];
+      S.items.push({id:uid(),cat:'attr',name:s[0],amount:s[1],cur:DESTS[k].cur,per:'person',day:0,src});
+    }
+    save(); renderBudget(); renderRecs(); renderDays();
+  });
+  $('#foodbar').addEventListener('click', e => {
+    if (e.target.id !== 'apply-food') return;
+    const d = destInfo();
+    let f = S.items.find(i => i.cat === 'food');
+    if (!f) { f = {id:uid(),cat:'food',name:'ארוחות ושתייה'}; S.items.push(f); }
+    f.amount = d.food; f.cur = d.cur; f.per = 'personDay';
+    save(); renderBudget();
+    e.target.textContent = 'עודכן';
+  });
+}
+
+/* ---------- days ---------- */
+function renderDays(){
+  const n = Math.min(days(), 60);
+  const attrs = S.items.filter(i => i.cat === 'attr');
+  const un = attrs.filter(a => !a.day || a.day > n);
+  $('#unassigned').innerHTML = un.length ? `<div class="unassigned"><b>אטרקציות שעוד לא שויכו ליום:</b> ${un.map(a => esc(a.name || 'ללא שם')).join(', ')}</div>` : '';
+  const start = Date.parse(S.from);
+  const dateFmt = new Intl.DateTimeFormat('he-IL',{weekday:'long',day:'numeric',month:'numeric'});
+  $('#days').innerHTML = Array.from({length:n}, (_,i) => {
+    const d = i+1;
+    const label = isNaN(start) ? '' : dateFmt.format(addDays(new Date(start), i));
+    const list = attrs.filter(a => +a.day === d);
+    const tag = d === 1 ? 'יום הטיסה' : (d === n && n > 1 ? 'יום החזרה' : '');
+    const cl = CLIMATE[S.dest];
+    const wx = (cl && !isNaN(start)) ? (() => { const m = addDays(new Date(start), i).getMonth(); return ` <span class="num" title="ממוצע לחודש">${cl.hi[m]}°/${cl.lo[m]}°</span>`; })() : '';
+    return `<div class="day">
+      <h3>יום ${d} <small>${esc(label)}${tag ? ', ' + tag : ''}${wx}</small></h3>
+      ${list.length ? `<ul>${list.map(a => `<li>${esc(a.name || 'ללא שם')}</li>`).join('')}</ul>` : ''}
+      <textarea data-note="${d}" rows="${Math.min(14, Math.max(3, (S.notes[d] || '').split('\n').length + 1))}" aria-label="הערות ליום ${d}" placeholder="הערות, מסעדות, הזמנות...">${esc(S.notes[d] || '')}</textarea>
+    </div>`;
+  }).join('');
+  enforceRO();
+}
+function initDays(){
+  $('#days').addEventListener('input', e => {
+    const d = e.target.dataset.note; if (!d) return;
+    S.notes[d] = e.target.value; save();
+  });
+}
+
+/* ---------- checklist ---------- */
+function renderChecks(){
+  $('#checks').innerHTML = CHECKS.map((c,i) =>
+    `<label><input type="checkbox" data-check="${i}" ${S.checks[i]?'checked':''}><span>${esc(c)}</span></label>`).join('');
+  enforceRO();
+}
+function initChecks(){
+  $('#checks').addEventListener('change', e => {
+    const i = e.target.dataset.check; if (i === undefined) return;
+    S.checks[i] = e.target.checked; save(); updateBadges();
+  });
+}
+
+/* ---------- tabs ---------- */
+const TAB_KEY = 'trip-planner-tab';
+const tabBtns = [...document.querySelectorAll('.tabs [role="tab"]')];
+function showTab(k, focus){
+  if (!tabBtns.some(b => b.dataset.tab === k)) k = 'budget';
+  tabBtns.forEach(b => {
+    const on = b.dataset.tab === k;
+    b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1;
+    if (on && focus) b.focus();
+    if (on) b.scrollIntoView({block:'nearest', inline:'nearest'});
+  });
+  document.querySelectorAll('.tabpanel').forEach(p => p.hidden = p.dataset.tab !== k);
+  try { localStorage.setItem(TAB_KEY, k); } catch(e) {}
+}
+function initTabs(){
+  const nav = $('.tabs');
+  nav.addEventListener('click', e => {
+    const b = e.target.closest('[role="tab"]'); if (!b) return;
+    showTab(b.dataset.tab);
+    const top = nav.getBoundingClientRect().top;
+    if (top < 0 || window.scrollY > nav.offsetTop) window.scrollTo({top: nav.offsetTop, behavior: 'instant' in window ? 'instant' : 'auto'});
+  });
+  nav.addEventListener('keydown', e => {
+    const i = tabBtns.findIndex(b => b.getAttribute('aria-selected') === 'true');
+    let j = null;
+    // RTL: left arrow moves to the next tab
+    if (e.key === 'ArrowLeft') j = (i + 1) % tabBtns.length;
+    if (e.key === 'ArrowRight') j = (i - 1 + tabBtns.length) % tabBtns.length;
+    if (e.key === 'Home') j = 0;
+    if (e.key === 'End') j = tabBtns.length - 1;
+    if (j !== null) { e.preventDefault(); showTab(tabBtns[j].dataset.tab, true); }
+  });
+  let saved = null; try { saved = localStorage.getItem(TAB_KEY); } catch(e) {}
+  showTab(saved || 'budget');
+}
+function updateBadges(){
+  const nAttr = S.items.filter(i => i.cat === 'attr').length;
+  $('#b-attr').textContent = nAttr ? nAttr : '';
+  const done = CHECKS.filter((_, i) => S.checks[i]).length;
+  $('#b-checks').textContent = done + '/' + CHECKS.length;
+  const nj = currentId ? entriesFor(currentId).length : 0;
+  $('#b-journal').textContent = nj ? nj : '';
+  const all = totals().all;
+  $('#b-budget').textContent = all > 0 ? fmt(all, 'ILS') : '';
+}
+
+/* ================================================================
+   Supabase data layer
+   ================================================================ */
+const CFG = window.TRIP_CONFIG || {};
+const BUCKET = 'trip-photos';
+let sb = null;
+let me = null;                    // {id, email, name}
+let trips = new Map();            // id -> {state, canon, owner, role}
+let journal = new Map();          // id -> {tripId, date, title, text, place, photos:[paths], createdAt}
+let currentId = null, lastCanon = '', writing = false, pending = false, timer = null, readOnly = false;
+
+function setStatus(text, kind){ const el = $('#sync'); el.textContent = text; el.dataset.kind = kind; }
+
+// stable stringify, so key order coming back from Postgres jsonb doesn't look like a change
+function canon(v){
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).filter(k => v[k] !== undefined).sort()
+    .map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
+}
+const clone = o => JSON.parse(JSON.stringify(o));
+
+async function loadTrips(){
+  const [t, m] = await Promise.all([
+    sb.from('trips').select('id, owner_id, state, updated_at, is_public, public_journal, public_budget'),
+    sb.from('trip_members').select('trip_id, role').eq('user_id', me.id)
+  ]);
+  if (t.error) throw t.error;
+  if (m.error) throw m.error;
+  const roles = new Map((m.data || []).map(r => [r.trip_id, r.role]));
+  const next = new Map();
+  (t.data || []).forEach(r => next.set(r.id, {
+    state: r.state, canon: canon(r.state), owner: r.owner_id,
+    pub: {on: !!r.is_public, journal: !!r.public_journal, budget: !!r.public_budget},
+    role: r.owner_id === me.id ? 'owner' : (me.admin ? 'admin' : (roles.get(r.id) || 'viewer'))
+  }));
+  if (me.admin) {
+    const {data} = await sb.from('profiles').select('id, email, full_name');
+    people = new Map((data || []).map(p => [p.id, p]));
+  }
+  return next;
+}
+let people = new Map();   // admin only: every registered user
+const canManage = t => t && (t.role === 'owner' || t.role === 'admin');
+const ownerName = id => { const p = people.get(id); return p ? (p.full_name || p.email) : ''; };
+const fromRow = r => ({
+  tripId: r.trip_id, date: r.entry_date || '', title: r.title || '', text: r.body || '',
+  place: r.place || '', photos: r.photos || [], createdAt: Date.parse(r.created_at) || 0
+});
+async function loadJournal(){
+  const {data, error} = await sb.from('journal_entries').select('*');
+  if (error) throw error;
+  journal = new Map((data || []).map(r => [r.id, fromRow(r)]));
+}
+
+let refreshTimer = null;
+function scheduleRefresh(){ clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshAll, 350); }
+async function refreshAll(){
+  try {
+    const next = await loadTrips();
+    await loadJournal();
+    if (currentId && (timer || writing) && trips.has(currentId)) next.set(currentId, trips.get(currentId));
+    trips = next;
+    if (currentId) {
+      if (!trips.has(currentId)) {
+        currentId = null; setView('home'); renderHome();
+        setStatus('הטיול נמחק או שהשיתוף שלו בוטל', 'warn'); return;
+      }
+      const t = trips.get(currentId);
+      if (t.role === 'viewer' && !readOnly) makeReadOnly();
+      if (!timer && !writing && t.canon !== lastCanon) applyRemote(t.state);
+      renderJournal(); updateBadges();
+    } else renderHome();
+  } catch(e) { setStatus('בעיה בטעינת הנתונים', 'warn'); }
+}
+
+function subscribeRealtime(){
+  sb.channel('trip-planner')
+    .on('postgres_changes', {event: '*', schema: 'public', table: 'trips'}, p => {
+      if (p.eventType === 'UPDATE' && p.new && trips.has(p.new.id)) {
+        const t = trips.get(p.new.id);
+        t.state = p.new.state; t.canon = canon(p.new.state);
+        if (p.new.id === currentId) { if (!timer && !writing && t.canon !== lastCanon) applyRemote(p.new.state); }
+        else if (!currentId) renderHome();
+      } else scheduleRefresh();
+    })
+    .on('postgres_changes', {event: '*', schema: 'public', table: 'journal_entries'}, scheduleRefresh)
+    .on('postgres_changes', {event: '*', schema: 'public', table: 'trip_members'}, scheduleRefresh)
+    .subscribe();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) scheduleRefresh(); });
+}
+
+/* ---------- saving the open trip ---------- */
+function schedulePersist(){
+  if (!currentId || readOnly) return;
+  clearTimeout(timer);
+  setStatus('שומר...', 'busy');
+  timer = setTimeout(flush, 700);
+}
+async function flush(){
+  clearTimeout(timer); timer = null;
+  if (!currentId || readOnly) return;
+  if (writing) { pending = true; return; }
+  writing = true;
+  const id = currentId, snap = clone(S), c = canon(snap);
+  try {
+    if (c !== lastCanon) {
+      const {data, error} = await sb.from('trips').update({state: snap}).eq('id', id).select('id');
+      if (error) throw error;
+      if (!data || !data.length) { makeReadOnly(); throw {handled: true}; }
+      const t = trips.get(id); if (t) { t.state = snap; t.canon = c; }
+    }
+    lastCanon = c;
+    setStatus('נשמר', 'ok');
+  } catch(e) {
+    if (!(e && e.handled)) { setStatus('אין חיבור, מנסה שוב', 'warn'); setTimeout(schedulePersist, 2000 + Math.random()*2000); }
+  }
+  writing = false;
+  if (pending) { pending = false; flush(); }
+}
+window.addEventListener('beforeunload', e => { if (timer || writing) { flush(); e.preventDefault(); e.returnValue = ''; } });
+
+async function createTrip(state){
+  const id = crypto.randomUUID();
+  const {error} = await sb.from('trips').insert({id, owner_id: me.id, state});
+  if (error) throw error;
+  trips.set(id, {state, canon: canon(state), owner: me.id, role: 'owner'});
+  return id;
+}
+async function removeTrip(id){
+  const paths = entriesFor(id).flatMap(e => e.photos || []);
+  // photos first: once the trip row is gone, storage policies no longer allow removing them
+  if (paths.length) await sb.storage.from(BUCKET).remove(paths);
+  const {error} = await sb.from('trips').delete().eq('id', id);
+  if (error) throw error;
+  trips.delete(id);
+  [...journal.entries()].forEach(([k, e]) => { if (e.tripId === id) journal.delete(k); });
+}
+
+/* ---------- read-only handling ---------- */
+function makeReadOnly(){ readOnly = true; setStatus('צפייה בלבד', 'ro'); enforceRO(); }
+function enforceRO(){
+  if (!readOnly) return;
+  document.querySelectorAll('#trip-view input, #trip-view select, #trip-view textarea, #trip-view button, .topbar button').forEach(el => {
+    if (['cv-amt','cv-cur'].includes(el.id) || el.classList.contains('keep')) return;
+    if (!el.disabled) { el.disabled = true; el.dataset.ro = '1'; }
+  });
+  $('#j-new').hidden = true;
+}
+function releaseRO(){
+  document.querySelectorAll('[data-ro]').forEach(el => { el.disabled = false; delete el.dataset.ro; });
+  $('#j-new').hidden = false;
+}
+
+function focusKey(){
+  const a = document.activeElement;
+  if (!a || a === document.body) return null;
+  let sel = null;
+  const row = a.closest && a.closest('.row');
+  if (row) { const c = [...a.classList].find(x => x.startsWith('r-')); if (c) sel = `.row[data-id="${row.dataset.id}"] .${c}`; }
+  else if (a.id) sel = '#' + a.id;
+  else if (a.dataset && a.dataset.note) sel = `[data-note="${a.dataset.note}"]`;
+  let st = null, en = null; try { st = a.selectionStart; en = a.selectionEnd; } catch(e) {}
+  return sel ? {sel, st, en} : null;
+}
+function applyRemote(state){
+  lastCanon = canon(state);
+  S = normalize(clone(state));
+  const f = focusKey();
+  applyAll();
+  if (f) { const el = document.querySelector(f.sel); if (el) { el.focus(); try { if (f.st != null) el.setSelectionRange(f.st, f.en); } catch(e) {} } }
+}
+function applyAll(){
+  $('#dest').value = S.dest; $('#from').value = S.from; $('#to').value = S.to;
+  $('#travelers').value = S.travelers; $('#custom').value = S.custom || '';
+  fillRates();
+  renderPass(); renderBudget(); renderRecs(); renderDays(); renderConv(); renderChecks();
+  enforceRO();
+}
+
+/* ---------- views ---------- */
+function setView(v){
+  document.body.dataset.view = v;
+  if (v === 'home') document.body.dataset.role = 'owner';
+  $('#home-view').hidden = v !== 'home';
+  $('#trip-view').hidden = v !== 'trip';
+  $('#page-title').textContent = v === 'home' ? 'הטיולים שלי' : 'מתכנן טיול';
+  window.scrollTo(0, 0);
+}
+function openTrip(id){
+  const t = trips.get(id); if (!t) return;
+  S = normalize(clone(t.state)); currentId = id; lastCanon = t.canon; routeAnim = true;
+  readOnly = t.role === 'viewer';
+  releaseRO();
+  document.body.dataset.role = canManage(t) ? 'owner' : t.role;
+  $('#share-open').textContent = canManage(t) ? 'שיתוף' : 'משתתפים';
+  if (t.role === 'admin') setTimeout(() => setStatus('גישת מנהל: הטיול של ' + (ownerName(t.owner) || 'משתמש אחר'), 'ro'), 0);
+  setView('trip'); applyAll(); closeComposer(); renderJournal(); updateBadges();
+  setStatus(readOnly ? 'צפייה בלבד' : 'מסונכרן', readOnly ? 'ro' : 'ok');
+}
+async function goHome(){
+  if (timer || writing) await flush();
+  currentId = null; lastCanon = ''; readOnly = false; releaseRO();
+  setView('home'); renderHome();
+  setStatus('מסונכרן', 'ok');
+}
+
+/* ---------- home grid ---------- */
+function withState(st, fn){ const prev = S; S = st; try { return fn(); } finally { S = prev; } }
+function tripInfo(id, t){
+  const st = normalize(clone(t.state || {}));
+  return withState(st, () => {
+    const d = DESTS[st.dest] || DESTS.OTHER;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const a = Date.parse(st.from), b = Date.parse(st.to);
+    let when = '', cls = '', past = false, sortKey = isNaN(a) ? 9e15 : a;
+    if (!isNaN(a)) {
+      const inDays = Math.round((a - today) / 864e5);
+      const endDays = isNaN(b) ? inDays : Math.round((b - today) / 864e5);
+      if (inDays > 1) { when = 'בעוד ' + inDays + ' ימים'; cls = inDays <= 30 ? 'soon' : ''; }
+      else if (inDays === 1) { when = 'מחר'; cls = 'soon'; }
+      else if (endDays >= 0) { when = 'בטיול עכשיו'; cls = 'now'; }
+      else { when = 'הסתיים'; past = true; }
+    }
+    const df = new Intl.DateTimeFormat('he-IL', {day:'numeric', month:'numeric'});
+    const dfy = new Intl.DateTimeFormat('he-IL', {day:'numeric', month:'numeric', year:'numeric'});
+    const range = (!isNaN(a) && !isNaN(b)) ? df.format(a) + ' עד ' + dfy.format(b) : '';
+    return {
+      id, past, when, cls, sortKey, range, role: t.role, owner: t.owner, dest: st.dest, pub: !!(t.pub && t.pub.on),
+      code: tripCode(st), coords: tripCoords(st),
+      custom: !/^[A-Z]{3}$/.test(tripCode(st)),
+      name: st.dest === 'OTHER' ? (st.custom || 'יעד אחר') + (st.geo && st.geo.country ? ', ' + st.geo.country : '') : d.name + ', ' + d.country,
+      travelers: T(), days: days(), total: totals().all
+    };
+  });
+}
+function cardHTML(i){
+  const cover = coverFor(i.id);
+  const n = entriesFor(i.id).length;
+  return `<button class="trip-card keep ${i.past ? 'past' : ''}" data-open="${esc(i.id)}">
+    ${cover ? `<div class="tc-cover">${imgTag(cover)}</div>` : `<div class="tc-map" aria-hidden="true">${routeSVG(i.dest, 300, 84, {pad: 26, r: 4, planeScale: .8, coords: i.coords})}</div>`}
+    <div class="tc-body">
+      <div class="tc-top"><span class="tc-code ${i.custom ? 'custom' : ''}">${esc(i.code)}</span>${i.when ? `<span class="tc-when ${i.cls}">${i.when}</span>` : ''}</div>
+      <div class="tc-name">${esc(i.name)}</div>
+      <div class="tc-meta">${esc(i.range)}${i.range ? ', ' : ''}${i.days} ימים, ${i.travelers === 1 ? 'נוסע אחד' : i.travelers + ' נוסעים'}</div>
+      ${i.role === 'admin' ? `<div class="tc-shared">של ${esc(ownerName(i.owner) || 'משתמש אחר')}</div>` :
+        i.role !== 'owner' ? `<div class="tc-shared">${i.role === 'viewer' ? 'שותף איתך לצפייה' : 'שותף איתך'}</div>` : ''}
+      ${i.pub ? '<div class="tc-public">פומבי, כל מי שיש לו קישור יכול לצפות</div>' : ''}
+      ${n ? `<div class="tc-journal">${n === 1 ? 'רשומה אחת ביומן' : n + ' רשומות ביומן'}</div>` : ''}
+      <div class="tc-total"><span>עלות משוערת</span><b class="num">${fmt(i.total, 'ILS')}</b></div>
+    </div>
+  </button>`;
+}
+function newCardHTML(){
+  const now = new Date();
+  return `<form class="new-card" id="new-trip" onsubmit="return false">
+    <h3>טיול חדש</h3>
+    <div><label for="nt-dest">יעד</label><select id="nt-dest">${Object.entries(DESTS).map(([k,d]) =>
+      `<option value="${k}">${k === 'OTHER' ? 'יעד אחר' : esc(d.name + ', ' + d.country)}</option>`).join('')}</select></div>
+    <div class="nf">
+      <div><label for="nt-from">יציאה</label><input type="date" id="nt-from" value="${iso(addDays(now,30))}"></div>
+      <div><label for="nt-to">חזרה</label><input type="date" id="nt-to" value="${iso(addDays(now,36))}"></div>
+    </div>
+    <button class="btn" type="submit" id="nt-go">יצירת הטיול</button>
+  </form>`;
+}
+function renderHome(){
+  if (!me) return;
+  const infos = [...trips.entries()].map(([id, t]) => tripInfo(id, t));
+  const upcoming = infos.filter(i => !i.past).sort((x, y) => x.sortKey - y.sortKey);
+  const past = infos.filter(i => i.past).sort((x, y) => y.sortKey - x.sortKey);
+  const mine = i => i.role !== 'admin';
+  let html = (me.admin ? `<button class="ai-card keep" id="ai-open" type="button">
+      <span class="ai-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 4l3.6 9.4L33 17l-9.4 3.6L20 30l-3.6-9.4L7 17l9.4-3.6z"/><circle cx="32" cy="31" r="3"/></svg></span>
+      <h3>טיול חדש עם AI</h3>
+      <p>כותבים לאן, כמה ימים ומה אוהבים, ומקבלים תוכנית מלאה לפי ימים: אטרקציות, שווקים ומסעדות.</p>
+      <span class="ai-note">אב־טיפוס, זמין רק למנהלים</span>
+    </button>` : '') + newCardHTML();
+  html += upcoming.filter(mine).map(cardHTML).join('');
+  const pastMine = past.filter(mine);
+  if (pastMine.length) html += `<div class="home-sep">טיולים שהסתיימו</div>` + pastMine.map(cardHTML).join('');
+  if (me.admin) {
+    const others = [...upcoming, ...past].filter(i => !mine(i));
+    html += `<div class="home-sep">כל הטיולים של משתמשים אחרים (${others.length})</div>` +
+      (others.length ? others.map(cardHTML).join('') : '<div class="panel">אין עדיין טיולים של משתמשים אחרים.</div>');
+    html += `<div class="home-sep">משתמשים רשומים</div><div class="panel admin-users" id="admin-users">טוען...</div>`;
+  }
+  $('#trips-grid').innerHTML = html;
+  if (me.admin) renderAdminUsers();
+  hydratePhotos($('#trips-grid'));
+}
+async function renderAdminUsers(){
+  const box = $('#admin-users'); if (!box) return;
+  const {data, error} = await sb.rpc('admin_users');
+  if (error) { box.textContent = 'לא הצלחנו לטעון את רשימת המשתמשים.'; return; }
+  const df = new Intl.DateTimeFormat('he-IL', {day:'numeric', month:'numeric', year:'numeric'});
+  const d = v => v ? df.format(new Date(v)) : '—';
+  box.innerHTML = `<div class="admin-scroll"><table class="admin-table">
+    <thead><tr><th>שם</th><th>מייל</th><th>נרשם</th><th>כניסה אחרונה</th><th>טיולים</th><th>משותף איתו</th><th>רשומות ביומן</th><th>תפקיד</th></tr></thead>
+    <tbody>${(data || []).map(u => `<tr>
+      <td>${esc(u.full_name || '—')}</td><td class="ltr">${esc(u.email)}</td><td>${d(u.created_at)}</td><td>${d(u.last_sign_in_at)}</td>
+      <td class="n">${u.trips_owned}</td><td class="n">${u.trips_shared}</td><td class="n">${u.journal_entries}</td><td>${u.is_admin ? 'מנהל' : 'משתמש'}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+function initHome(){
+  $('#trips-grid').addEventListener('click', e => {
+    const card = e.target.closest('[data-open]');
+    if (card) openTrip(card.dataset.open);
+  });
+  $('#trips-grid').addEventListener('submit', async e => {
+    if (e.target.id !== 'new-trip') return;
+    const st = defaults();
+    st.dest = $('#nt-dest').value;
+    st.from = $('#nt-from').value || st.from;
+    st.to = $('#nt-to').value || st.to;
+    const d = DESTS[st.dest];
+    if (d && st.dest !== 'OTHER') {
+      const nice = v => v >= 1000 ? Math.round(v/100)*100 : v >= 100 ? Math.round(v/10)*10 : Math.round(v);
+      st.items.forEach(it => {
+        if (!['hotel','food','transport'].includes(it.cat) || it.cur === d.cur) return;
+        it.amount = nice(it.amount * DEFAULT_RATES[it.cur] / DEFAULT_RATES[d.cur]); it.cur = d.cur;
+      });
+      const f = st.items.find(it => it.cat === 'food'); if (f) f.amount = d.food;
+    }
+    const btn = $('#nt-go'); btn.disabled = true; btn.textContent = 'יוצר...';
+    try { const id = await createTrip(st); openTrip(id); }
+    catch(err) { btn.disabled = false; btn.textContent = 'יצירת הטיול'; setStatus('היצירה נכשלה', 'warn'); }
+  });
+}
+
+/* ---------- top actions ---------- */
+$('#print').addEventListener('click', () => window.print());
+$('#back').addEventListener('click', goHome);
+$('#logout').addEventListener('click', async () => {
+  if (timer || writing) await flush();
+  await sb.auth.signOut();
+  location.replace('login.html');
+});
+$('#dup').addEventListener('click', async () => {
+  if (!currentId) return;
+  if (!readOnly) await flush();
+  try { const id = await createTrip(clone(S)); openTrip(id); setStatus('נוצר עותק שלך של הטיול', 'ok'); }
+  catch(e) { setStatus('השכפול נכשל', 'warn'); }
+});
+$('#del').addEventListener('click', async () => {
+  const t = trips.get(currentId);
+  if (!canManage(t)) return;
+  if (!confirm('למחוק את הטיול, כולל היומן והתמונות? הוא יימחק גם לכל המשתתפים.')) return;
+  clearTimeout(timer); timer = null;
+  const id = currentId; currentId = null;
+  try { await removeTrip(id); } catch(e) { setStatus('המחיקה נכשלה', 'warn'); }
+  goHome();
+});
+
+/* ---------- sharing ---------- */
+async function renderMembers(){
+  const t = trips.get(currentId); if (!t) return;
+  const [owner, mem] = await Promise.all([
+    sb.from('profiles').select('id, email, full_name').eq('id', t.owner).maybeSingle(),
+    sb.from('trip_members').select('user_id, role, profiles(email, full_name)').eq('trip_id', currentId)
+  ]);
+  const rows = [];
+  if (owner.data) rows.push({id: owner.data.id, name: owner.data.full_name, email: owner.data.email, role: 'owner'});
+  (mem.data || []).forEach(m => rows.push({id: m.user_id, name: m.profiles && m.profiles.full_name, email: m.profiles && m.profiles.email, role: m.role}));
+  const roleTxt = {owner: 'מארגן הטיול', editor: 'עריכה', viewer: 'צפייה'};
+  $('#share-list').innerHTML = rows.map(r => `<li>
+      <div><span class="m-name">${esc(r.name || r.email || 'משתמש')}${r.id === me.id ? ' (את/ה)' : ''}</span><span class="m-mail">${esc(r.email || '')}</span></div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="m-role">${roleTxt[r.role]}</span>
+      ${canManage(t) && r.role !== 'owner' ? `<button class="btn ghost small keep" data-unshare="${esc(r.id)}">הסרה</button>` : ''}</div>
+    </li>`).join('');
+}
+const publicUrl = id => location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'view.html?trip=' + id;
+function renderPublic(){
+  const t = trips.get(currentId); if (!t) return;
+  const pub = t.pub || {on: false, journal: false, budget: false};
+  $('#pub-on').checked = pub.on; $('#pub-journal').checked = pub.journal; $('#pub-budget').checked = pub.budget;
+  $('#pub-opts').setAttribute('aria-disabled', !pub.on);
+  $('#pub-link').hidden = !pub.on;
+  $('#pub').hidden = !canManage(t) && !pub.on;
+  if (pub.on) { $('#pub-url').value = publicUrl(currentId); $('#pub-view').href = publicUrl(currentId); }
+}
+async function savePublic(){
+  const t = trips.get(currentId); if (!canManage(t)) return;
+  const next = {on: $('#pub-on').checked, journal: $('#pub-journal').checked, budget: $('#pub-budget').checked};
+  $('#pub-msg').textContent = 'שומר...';
+  const {data, error} = await sb.from('trips')
+    .update({is_public: next.on, public_journal: next.journal, public_budget: next.budget})
+    .eq('id', currentId).select('id');
+  if (error || !data || !data.length) { $('#pub-msg').textContent = 'השינוי לא נשמר. רק מארגן הטיול יכול לשנות את השיתוף הפומבי.'; renderPublic(); return; }
+  t.pub = next;
+  $('#pub-msg').textContent = next.on ? 'הטיול פומבי. כל מי שיקבל את הקישור יוכל לצפות בו.' : 'הטיול כבר לא פומבי. הקישור הפסיק לעבוד.';
+  renderPublic();
+}
+function initShare(){
+  const modal = $('#share');
+  const close = () => { modal.hidden = true; $('#share-msg').textContent = ''; };
+  ['pub-on','pub-journal','pub-budget'].forEach(id => $('#' + id).addEventListener('change', savePublic));
+  $('#pub-copy').addEventListener('click', async () => {
+    const url = $('#pub-url').value;
+    try { await navigator.clipboard.writeText(url); $('#pub-msg').textContent = 'הקישור הועתק.'; }
+    catch(e) { $('#pub-url').select(); $('#pub-msg').textContent = 'סמנו את הקישור והעתיקו ידנית.'; }
+  });
+  $('#share-open').addEventListener('click', () => { modal.hidden = false; $('#pub-msg').textContent = ''; renderPublic(); renderMembers(); if (canManage(trips.get(currentId))) $('#share-email').focus(); });
+  $('#share-close').addEventListener('click', close);
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) close(); });
+  $('#share-form').addEventListener('submit', async () => {
+    const email = $('#share-email').value.trim(); if (!email) return;
+    $('#share-add').disabled = true; $('#share-msg').textContent = 'מוסיף...';
+    const {data, error} = await sb.rpc('share_trip', {p_trip: currentId, p_email: email, p_role: $('#share-role').value});
+    $('#share-add').disabled = false;
+    const msgs = {
+      ok: 'נוסף. הטיול יופיע אצלו/ה ברשימת הטיולים.',
+      not_found: 'לא מצאנו משתמש רשום עם המייל הזה. בקשו ממנו/ה להירשם לאתר קודם.',
+      self: 'זה המייל שלך.',
+      not_owner: 'רק מארגן הטיול יכול לשתף אותו.'
+    };
+    $('#share-msg').textContent = error ? 'השיתוף נכשל. נסו שוב.' : (msgs[data] || 'השיתוף נכשל.');
+    if (data === 'ok') { $('#share-email').value = ''; renderMembers(); }
+  });
+  $('#share-list').addEventListener('click', async e => {
+    const uidToRemove = e.target.dataset.unshare; if (!uidToRemove) return;
+    const {error} = await sb.from('trip_members').delete().eq('trip_id', currentId).eq('user_id', uidToRemove);
+    $('#share-msg').textContent = error ? 'ההסרה נכשלה.' : 'הוסר מהטיול.';
+    renderMembers();
+  });
+  $('#share-leave').addEventListener('click', async () => {
+    if (!confirm('לעזוב את הטיול? הוא ייעלם מהרשימה שלך.')) return;
+    const id = currentId;
+    const {error} = await sb.from('trip_members').delete().eq('trip_id', id).eq('user_id', me.id);
+    if (error) { $('#share-msg').textContent = 'העזיבה נכשלה.'; return; }
+    close(); trips.delete(id); clearTimeout(timer); timer = null; currentId = null; goHome();
+  });
+}
+
+/* ================================================================
+   AI planner (prototype, admins only). Talks to /api/ai-plan on our Worker.
+   ================================================================ */
+let ai = {plan: null, history: []};
+const KIND = {attraction: 'אטרקציה', market: 'שוק', restaurant: 'מסעדה', cafe: 'בית קפה', walk: 'הליכה', other: ''};
+function aiStatus(t, kind){ const el = $('#ai-status'); el.textContent = t || ''; el.className = 'ai-status ' + (kind || ''); }
+async function aiCall(request){
+  const {data: {session}} = await sb.auth.getSession();
+  if (!session) { location.replace('login.html'); return null; }
+  const res = await fetch('/api/ai-plan', {
+    method: 'POST',
+    headers: {'content-type': 'application/json', authorization: 'Bearer ' + session.access_token},
+    body: JSON.stringify({request, start_date: $('#ai-date').value, days: $('#ai-days').value, travelers: $('#ai-trav').value,
+      history: ai.history, plan: ai.plan})
+  });
+  let out = {};
+  try { out = await res.json(); } catch(e) {}
+  if (!res.ok) throw new Error(out.message || (res.status === 404 ? 'שירות ה-AI עדיין לא פרוס ב-Worker.' : 'הבקשה נכשלה.'));
+  return out.plan;
+}
+async function aiRun(request, isChange){
+  if (!request.trim()) { aiStatus('כתבו מה אתם מחפשים.', 'err'); return; }
+  const btns = ['#ai-go', '#ai-change-go', '#ai-create'].map(x => $(x));
+  btns.forEach(b => b.disabled = true);
+  aiStatus(isChange ? 'מעדכן את התוכנית...' : 'בונה תוכנית ובודק מידע עדכני. זה יכול לקחת עד דקה.', 'busy');
+  try {
+    const plan = await aiCall(request);
+    if (!plan) return;
+    if (!isChange) ai.history = [];
+    ai.history.push({role: 'user', text: request});
+    if (plan.reply) ai.history.push({role: 'assistant', text: plan.reply});
+    ai.plan = plan;
+    aiStatus('');
+    renderAiPlan();
+    if (isChange) $('#ai-change').value = '';
+  } catch(e) { aiStatus(e.message || 'הבקשה נכשלה. נסו שוב.', 'err'); }
+  finally { btns.forEach(b => b.disabled = false); }
+}
+function renderAiPlan(){
+  const p = ai.plan; if (!p) return;
+  const cur = p.destination.currency || 'EUR';
+  const start = Date.parse($('#ai-date').value);
+  const dayFmt = new Intl.DateTimeFormat('he-IL', {weekday: 'long', day: 'numeric', month: 'numeric'});
+  $('#ai-plan').innerHTML = `
+    ${ai.history.length > 2 && p.reply ? `<p class="ai-reply">${esc(p.reply)}</p>` : ''}
+    <h3>${esc(p.destination.city)}${p.destination.country ? ', ' + esc(p.destination.country) : ''}</h3>
+    <p class="ai-sum">${esc(p.summary)}</p>
+    ${p.days.map(d => `<div class="ai-day"><h4>יום ${d.day}: ${esc(d.title)} <small>${isNaN(start) ? '' : esc(dayFmt.format(new Date(start + (d.day - 1) * 864e5)))}</small></h4>
+      ${d.items.map(it => `<div class="ai-item">
+        <time>${esc(it.time)}</time>
+        <span><span class="nm">${it.url ? `<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.name)}</a>` : esc(it.name)}</span><span class="kind">${KIND[it.kind] || ''}</span>${it.area ? ` <span class="hint">${esc(it.area)}</span>` : ''}</span>
+        <span class="pr num">${it.price ? fmt(it.price, cur) : (['attraction','walk','market'].includes(it.kind) ? 'חינם' : '')}</span>
+        <span class="ds">${esc(it.description)}</span></div>`).join('')}</div>`).join('')}
+    ${p.tips && p.tips.length ? `<h4>טיפים</h4><ul class="ai-tips">${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}`;
+  $('#ai-plan').hidden = false; $('#ai-refine').hidden = false; $('#ai-actions').hidden = false;
+}
+function stateFromPlan(p){
+  const st = defaults();
+  const dest = p.destination;
+  const known = Object.keys(DESTS).find(k => k !== 'OTHER' && (k === dest.code || DESTS[k].name === dest.city));
+  if (known) st.dest = known;
+  else { st.dest = 'OTHER'; st.custom = dest.city; st.geo = {code: dest.code, lat: dest.lat, lon: dest.lon, country: dest.country}; }
+  const from = $('#ai-date').value || st.from;
+  st.from = from;
+  st.to = iso(addDays(new Date(from), Math.max(1, p.days.length) - 1));
+  st.travelers = Math.max(1, parseInt($('#ai-trav').value, 10) || 2);
+  const cur = dest.currency || 'EUR';
+  const nice = v => v >= 1000 ? Math.round(v/100)*100 : v >= 100 ? Math.round(v/10)*10 : Math.round(v);
+  st.items.forEach(it => {
+    if (!['hotel','food','transport'].includes(it.cat) || it.cur === cur || !DEFAULT_RATES[cur]) return;
+    it.amount = nice(it.amount * DEFAULT_RATES[it.cur] / DEFAULT_RATES[cur]); it.cur = cur;
+  });
+  const food = st.items.find(it => it.cat === 'food');
+  if (food && p.daily_food_budget) { food.amount = Math.round(p.daily_food_budget); food.cur = cur; }
+  p.days.forEach(d => {
+    const lines = [];
+    if (d.title) lines.push(d.title);
+    d.items.forEach(it => {
+      lines.push(`${it.time ? it.time + ' ' : ''}${it.name}${it.area ? ' (' + it.area + ')' : ''}: ${it.description}`);
+      if (['attraction','market','walk','other'].includes(it.kind) && it.price > 0)
+        st.items.push({id: uid(), cat: 'attr', name: it.name, amount: it.price, cur, per: 'person', day: d.day});
+    });
+    st.notes[d.day] = lines.join('\n');
+  });
+  st.aiTips = p.tips || [];
+  return st;
+}
+function initAI(){
+  const modal = $('#ai');
+  const close = () => { modal.hidden = true; };
+  $('#trips-grid').addEventListener('click', e => {
+    if (!e.target.closest('#ai-open')) return;
+    if (!$('#ai-date').value) $('#ai-date').value = iso(addDays(new Date(), 30));
+    modal.hidden = false; $('#ai-req').focus();
+  });
+  $('#ai-close').addEventListener('click', close);
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) close(); });
+  $('#ai-form').addEventListener('submit', () => { ai = {plan: null, history: []}; aiRun($('#ai-req').value, false); });
+  $('#ai-refine').addEventListener('submit', () => aiRun($('#ai-change').value, true));
+  $('#ai-create').addEventListener('click', async () => {
+    if (!ai.plan) return;
+    $('#ai-create').disabled = true;
+    try {
+      const id = await createTrip(stateFromPlan(ai.plan));
+      close(); ai = {plan: null, history: []};
+      $('#ai-plan').hidden = $('#ai-refine').hidden = $('#ai-actions').hidden = true;
+      openTrip(id); showTab('days');
+      setStatus('הטיול נוצר מהתוכנית', 'ok');
+    } catch(e) { aiStatus('יצירת הטיול נכשלה. נסו שוב.', 'err'); }
+    $('#ai-create').disabled = false;
+  });
+}
+
+/* ================================================================
+   Journal with photos (Supabase Storage, private bucket)
+   ================================================================ */
+let jEdit = null;                 // {id|null, keep:[paths], removed:[paths], files:[{file,url}]}
+let lb = {list: [], i: 0, cap: ''};
+const urlCache = new Map();       // path -> {url, exp}
+
+function entriesFor(tripId){
+  return [...journal.entries()].filter(([, e]) => e.tripId === tripId)
+    .map(([id, e]) => ({id, ...e}))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.createdAt || 0) - (b.createdAt || 0));
+}
+function coverFor(tripId){
+  for (const e of entriesFor(tripId)) if (e.photos && e.photos.length) return e.photos[0];
+  return null;
+}
+function cachedUrl(p){ const c = urlCache.get(p); return c && c.exp > Date.now() ? c.url : ''; }
+function imgTag(path){
+  const u = cachedUrl(path);
+  return `<img data-path="${esc(path)}"${u ? ` src="${esc(u)}"` : ''} alt="" loading="lazy">`;
+}
+async function hydratePhotos(root){
+  const imgs = [...(root || document).querySelectorAll('img[data-path]')].filter(i => !i.getAttribute('src'));
+  const need = [...new Set(imgs.map(i => i.dataset.path))].filter(p => !cachedUrl(p));
+  if (need.length) {
+    const {data, error} = await sb.storage.from(BUCKET).createSignedUrls(need, 3600);
+    if (!error && data) data.forEach((d, k) => {
+      if (d && d.signedUrl) urlCache.set(d.path || need[k], {url: d.signedUrl, exp: Date.now() + 3300e3});
+    });
+  }
+  imgs.forEach(i => { const u = cachedUrl(i.dataset.path); if (u) i.src = u; });
+}
+function onJournalChange(){
+  if (document.body.dataset.view === 'home') renderHome();
+  else if (currentId) { renderJournal(); updateBadges(); }
+}
+
+async function putEntry(id, data, isNew){
+  const row = {
+    trip_id: data.tripId, entry_date: data.date || null, title: data.title,
+    body: data.text, place: data.place, photos: data.photos
+  };
+  const q = isNew ? sb.from('journal_entries').insert({id, author_id: me.id, ...row})
+                  : sb.from('journal_entries').update(row).eq('id', id);
+  const {error} = await q;
+  if (error) throw error;
+  journal.set(id, {...data, createdAt: isNew ? Date.now() : (journal.get(id)?.createdAt || Date.now())});
+  onJournalChange();
+}
+async function dropEntry(id){
+  const e = journal.get(id);
+  const {error} = await sb.from('journal_entries').delete().eq('id', id);
+  if (error) throw error;
+  if (e && e.photos && e.photos.length) await sb.storage.from(BUCKET).remove(e.photos);
+  journal.delete(id); onJournalChange();
+}
+
+/* image resizing before upload keeps storage use and loading time low */
+async function shrink(file){
+  const MAX = 1800;
+  let bmp;
+  try { bmp = await createImageBitmap(file, {imageOrientation: 'from-image'}); }
+  catch(e) {
+    try { bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); }); }
+    catch(e2) { bmp = null; }
+  }
+  if (!bmp) {
+    if (['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)) return {blob: file, type: file.type};
+    throw {code: 'unsupported_type'};
+  }
+  const w = bmp.width, h = bmp.height, k = Math.min(1, MAX / Math.max(w, h));
+  const cv = document.createElement('canvas'); cv.width = Math.round(w*k); cv.height = Math.round(h*k);
+  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.85));
+  return blob ? {blob, type: 'image/jpeg'} : {blob: file, type: file.type || 'image/jpeg'};
+}
+const EXT = {'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif'};
+
+function dayLabel(date){
+  const a = Date.parse(S.from), d = Date.parse(date);
+  const df = new Intl.DateTimeFormat('he-IL', {weekday: 'long', day: 'numeric', month: 'numeric'});
+  const dateTxt = isNaN(d) ? 'בלי תאריך' : df.format(d);
+  if (isNaN(a) || isNaN(d)) return {head: dateTxt, sub: ''};
+  const n = Math.round((d - a) / 864e5) + 1;
+  if (n >= 1 && n <= days()) return {head: 'יום ' + n, sub: dateTxt};
+  return {head: dateTxt, sub: n < 1 ? 'לפני הטיול' : 'אחרי הטיול'};
+}
+function renderJournal(){
+  if (!currentId) return;
+  const list = entriesFor(currentId);
+  if (!list.length) {
+    $('#j-list').innerHTML = `<div class="j-empty panel">היומן עדיין ריק. ${readOnly ? '' : 'לחצו על "רשומה חדשה" כדי לכתוב את החוויה הראשונה.'}</div>`;
+    enforceRO(); return;
+  }
+  const groups = new Map();
+  list.forEach(e => { const k = e.date || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); });
+  $('#j-list').innerHTML = [...groups.entries()].map(([date, es]) => {
+    const L = dayLabel(date);
+    return `<div class="j-day"><h3>${esc(L.head)} <small>${esc(L.sub)}</small></h3>${es.map(e => `
+      <article class="j-entry" data-entry="${esc(e.id)}">
+        <header>
+          <div>${e.title ? `<h4>${esc(e.title)}</h4>` : ''}${e.place ? `<div class="j-place">📍 ${esc(e.place)}</div>` : ''}</div>
+          <div class="j-tools"><button class="btn ghost small" data-jedit="${esc(e.id)}">עריכה</button><button class="btn ghost small" data-jdel="${esc(e.id)}">מחיקה</button></div>
+        </header>
+        ${e.text ? `<p class="j-text">${esc(e.text)}</p>` : ''}
+        ${(e.photos || []).length ? `<div class="j-gallery">${e.photos.map((pth, i) =>
+          `<button class="keep" data-lb="${esc(e.id)}" data-i="${i}" aria-label="הגדלת תמונה ${i+1}">${imgTag(pth)}</button>`).join('')}</div>` : ''}
+      </article>`).join('')}</div>`;
+  }).join('');
+  hydratePhotos($('#j-list'));
+  enforceRO();
+}
+
+function openComposer(entry){
+  const today = iso(new Date());
+  const inTrip = today >= S.from && today <= S.to;
+  jEdit = {id: entry ? entry.id : null, keep: entry ? [...(entry.photos || [])] : [], removed: [], files: []};
+  $('#j-form-title').textContent = entry ? 'עריכת רשומה' : 'רשומה חדשה';
+  $('#j-date').value = entry ? (entry.date || '') : (inTrip ? today : S.from);
+  $('#j-place').value = entry ? (entry.place || '') : '';
+  $('#j-title').value = entry ? (entry.title || '') : '';
+  $('#j-text').value = entry ? (entry.text || '') : '';
+  $('#j-msg').textContent = '';
+  renderEditPhotos();
+  $('#j-form').hidden = false; $('#j-new').hidden = true;
+  $('#j-title').focus();
+}
+function closeComposer(){
+  if (jEdit) jEdit.files.forEach(f => URL.revokeObjectURL(f.url));
+  jEdit = null;
+  $('#j-form').hidden = true; $('#j-new').hidden = readOnly;
+  $('#j-file').value = '';
+}
+function renderEditPhotos(){
+  if (!jEdit) return;
+  $('#j-photos-edit').innerHTML =
+    jEdit.keep.map((pth, i) => `<div class="j-thumb">${imgTag(pth)}<button type="button" data-rmkeep="${i}" aria-label="הסרת התמונה">×</button></div>`).join('') +
+    jEdit.files.map((f, i) => `<div class="j-thumb new"><img src="${f.url}" alt=""><button type="button" data-rmfile="${i}" aria-label="הסרת התמונה">×</button></div>`).join('');
+  hydratePhotos($('#j-photos-edit'));
+}
+async function saveEntry(){
+  if (!jEdit || readOnly) return;
+  const title = $('#j-title').value.trim(), text = $('#j-text').value.trim();
+  if (!title && !text && !jEdit.keep.length && !jEdit.files.length) { $('#j-msg').textContent = 'כתבו משהו או הוסיפו תמונה.'; return; }
+  const btn = $('#j-save'); btn.disabled = true;
+  const uploaded = [];
+  try {
+    for (let i = 0; i < jEdit.files.length; i++) {
+      $('#j-msg').textContent = `מעלה תמונה ${i+1} מתוך ${jEdit.files.length}...`;
+      const {blob, type} = await shrink(jEdit.files[i].file);
+      const path = `${currentId}/${crypto.randomUUID()}.${EXT[type] || 'jpg'}`;
+      const {error} = await sb.storage.from(BUCKET).upload(path, blob, {contentType: type, cacheControl: '31536000', upsert: false});
+      if (error) throw error;
+      uploaded.push(path);
+    }
+    const isNew = !jEdit.id;
+    const id = jEdit.id || crypto.randomUUID();
+    $('#j-msg').textContent = 'שומר...';
+    await putEntry(id, {
+      tripId: currentId, date: $('#j-date').value, place: $('#j-place').value.trim(), title, text,
+      photos: [...jEdit.keep, ...uploaded]
+    }, isNew);
+    if (jEdit.removed.length) await sb.storage.from(BUCKET).remove(jEdit.removed);
+    closeComposer();
+  } catch(e) {
+    if (uploaded.length) { try { await sb.storage.from(BUCKET).remove(uploaded); } catch(err) {} }
+    const code = e && (e.code || e.statusCode || e.error);
+    const msg = String((e && e.message) || '');
+    $('#j-msg').textContent =
+      code === 'unsupported_type' || /mime/i.test(msg) ? 'אחת התמונות בפורמט שלא נתמך. נסו JPG או PNG.' :
+      /size|large/i.test(msg) ? 'אחת התמונות גדולה מדי.' :
+      /row-level security|policy|unauthorized/i.test(msg) ? 'אין לכם הרשאה להוסיף לטיול הזה.' :
+      'השמירה נכשלה. בדקו את החיבור ונסו שוב.';
+  }
+  btn.disabled = false;
+}
+
+function openLightbox(entryId, i){
+  const e = journal.get(entryId); if (!e || !e.photos || !e.photos.length) return;
+  lb = {list: e.photos, i, cap: [e.title, e.place].filter(Boolean).join(', ')};
+  showLb(); $('#lightbox').hidden = false; $('#lb-close').focus();
+}
+function showLb(){
+  const img = $('#lb-img');
+  img.dataset.path = lb.list[lb.i];
+  const u = cachedUrl(lb.list[lb.i]);
+  if (u) img.src = u; else { img.removeAttribute('src'); hydratePhotos($('#lightbox')); }
+  $('#lb-cap').textContent = (lb.cap ? lb.cap + '  ' : '') + (lb.list.length > 1 ? `(${lb.i+1}/${lb.list.length})` : '');
+  $('#lb-prev').hidden = $('#lb-next').hidden = lb.list.length < 2;
+}
+function stepLb(d){ lb.i = (lb.i + d + lb.list.length) % lb.list.length; showLb(); }
+function closeLb(){ $('#lightbox').hidden = true; $('#lb-img').removeAttribute('src'); }
+
+function initJournal(){
+  $('#j-new').addEventListener('click', () => { if (!readOnly) openComposer(null); });
+  $('#j-cancel').addEventListener('click', closeComposer);
+  $('#j-form').addEventListener('submit', saveEntry);
+  $('#j-file').addEventListener('change', e => {
+    if (!jEdit) return;
+    [...e.target.files].forEach(f => jEdit.files.push({file: f, url: URL.createObjectURL(f)}));
+    e.target.value = ''; renderEditPhotos();
+  });
+  $('#j-photos-edit').addEventListener('click', e => {
+    if (!jEdit) return;
+    const k = e.target.dataset.rmkeep, f = e.target.dataset.rmfile;
+    if (k !== undefined) { jEdit.removed.push(jEdit.keep[+k]); jEdit.keep.splice(+k, 1); }
+    if (f !== undefined) { URL.revokeObjectURL(jEdit.files[+f].url); jEdit.files.splice(+f, 1); }
+    renderEditPhotos();
+  });
+  $('#j-list').addEventListener('click', async e => {
+    const lbBtn = e.target.closest('[data-lb]');
+    if (lbBtn) return openLightbox(lbBtn.dataset.lb, +lbBtn.dataset.i);
+    const ed = e.target.dataset.jedit, del = e.target.dataset.jdel;
+    if (ed && !readOnly) { const en = journal.get(ed); if (en) { openComposer({id: ed, ...en}); $('#j-form').scrollIntoView({block: 'nearest'}); } }
+    if (del && !readOnly) {
+      if (!confirm('למחוק את הרשומה ואת התמונות שלה?')) return;
+      try { await dropEntry(del); } catch(err) { setStatus('המחיקה נכשלה', 'warn'); }
+    }
+  });
+  $('#lb-close').addEventListener('click', closeLb);
+  $('#lb-prev').addEventListener('click', () => stepLb(-1));
+  $('#lb-next').addEventListener('click', () => stepLb(1));
+  $('#lightbox').addEventListener('click', e => { if (e.target.id === 'lightbox') closeLb(); });
+  document.addEventListener('keydown', e => {
+    if ($('#lightbox').hidden) return;
+    if (e.key === 'Escape') closeLb();
+    // RTL: left arrow goes forward
+    if (e.key === 'ArrowLeft') stepLb(1);
+    if (e.key === 'ArrowRight') stepLb(-1);
+  });
+}
+
+/* ================================================================
+   Boot: require a signed-in user, then load everything
+   ================================================================ */
+async function boot(){
+  if (!window.supabase || !CFG.SUPABASE_URL || /YOUR-/.test(CFG.SUPABASE_URL + CFG.SUPABASE_ANON_KEY)) {
+    setStatus('לא מוגדר', 'warn');
+    $('#trips-grid').innerHTML = '<div class="panel">חסרות הגדרות Supabase בקובץ config.js. ההוראות נמצאות בקובץ README.</div>';
+    return;
+  }
+  sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+  const {data: {session}} = await sb.auth.getSession();
+  if (!session) { location.replace('login.html'); return; }
+  const u = session.user;
+  me = {id: u.id, email: u.email, name: (u.user_metadata && u.user_metadata.full_name) || u.email};
+  try { const {data} = await sb.rpc('is_admin'); me.admin = data === true; } catch(e) { me.admin = false; }
+  $('#who').textContent = me.name + (me.admin ? ' (מנהל)' : ''); $('#who').title = me.email;
+  sb.auth.onAuthStateChange((ev, s) => { if (ev === 'SIGNED_OUT' || !s) location.replace('login.html'); });
+  setStatus('טוען...', 'busy');
+  try { trips = await loadTrips(); await loadJournal(); }
+  catch(e) {
+    setStatus('בעיה בחיבור', 'warn');
+    $('#trips-grid').innerHTML = '<div class="panel">לא הצלחנו לטעון את הטיולים. בדקו את החיבור ורעננו את הדף.</div>';
+    return;
+  }
+  subscribeRealtime();
+  setStatus('מסונכרן', 'ok');
+  renderHome();
+}
+
+/* ---------- init ---------- */
+initTabs(); initPass(); initRates(); initBudget(); initRecs(); initDays(); initChecks(); initHome(); initJournal(); initShare(); initAI();
+setView('home');
+boot();
+})();
+</script>
+</body>
+</html>

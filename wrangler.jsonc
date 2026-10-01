@@ -1,0 +1,18 @@
+{
+  // Worker name must match the project in the Cloudflare dashboard
+  "name": "mytrips",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    // requests to /api/* go to the Worker code; everything else is served as static files
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    // same values as public/config.js (both are safe to publish)
+    "SUPABASE_URL": "https://YOUR-PROJECT.supabase.co",
+    "SUPABASE_ANON_KEY": "YOUR-ANON-KEY"
+  }
+  // ANTHROPIC_API_KEY is a secret: set it in the dashboard, never in this file
+}

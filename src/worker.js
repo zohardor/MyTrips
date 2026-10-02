@@ -3,11 +3,15 @@
 // - /api/ai-plan builds or revises a trip plan with Claude. Prototype: admins only.
 //
 // Secrets / variables (Cloudflare dashboard > Worker > Settings > Variables and Secrets):
-//   ANTHROPIC_API_KEY   secret, from console.anthropic.com
+//   AI_PROVIDER         "gemini" or "claude" (set in wrangler.jsonc)
+//   GEMINI_API_KEY      secret, from aistudio.google.com (free tier)
+//   GEMINI_MODEL        optional, defaults to GEMINI_DEFAULT_MODEL below
+//   ANTHROPIC_API_KEY   secret, from console.anthropic.com (paid)
 //   SUPABASE_URL        plain variable (also set in wrangler.jsonc)
 //   SUPABASE_ANON_KEY   plain variable (also set in wrangler.jsonc)
 
 const MODEL = 'claude-sonnet-5-5';
+const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest';
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'CZK', 'HUF', 'ILS'];
 
 export default {
@@ -24,7 +28,9 @@ const json = (obj, status = 200) => new Response(JSON.stringify(obj), {
 
 async function handlePlan(request, env) {
   if (request.method !== 'POST') return json({error: 'method_not_allowed'}, 405);
-  if (!env.ANTHROPIC_API_KEY) return json({error: 'not_configured', message: 'חסר מפתח ANTHROPIC_API_KEY בהגדרות ה-Worker.'}, 500);
+  const provider = (env.AI_PROVIDER || (env.GEMINI_API_KEY ? 'gemini' : 'claude')).toLowerCase();
+  const keyName = provider === 'gemini' ? 'GEMINI_API_KEY' : 'ANTHROPIC_API_KEY';
+  if (!env[keyName]) return json({error: 'not_configured', message: `חסר מפתח ${keyName} בהגדרות ה-Worker.`}, 500);
 
   // 1. who is calling? verify the Supabase session token
   const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
@@ -75,42 +81,66 @@ async function handlePlan(request, env) {
   }
   if (merged[0].role !== 'user') merged.unshift({role: 'user', content: req});
 
-  // 5. call Claude (web search for current info, then the structured plan tool)
-  let resp, data, convo = merged;
+  // 5. ask the model
+  let raw;
+  try {
+    raw = provider === 'gemini' ? await callGemini(env, merged) : await callClaude(env, merged);
+  } catch (e) {
+    return json({error: 'ai_error', message: e.userMessage || 'שירות ה-AI החזיר שגיאה. נסו שוב בעוד דקה.', detail: String(e.message || '').slice(0, 300)}, 502);
+  }
+  if (!raw) return json({error: 'no_plan', message: 'לא התקבלה תוכנית. נסו לנסח את הבקשה אחרת.'}, 502);
+  return json({plan: sanitizePlan(raw, days), provider});
+}
+
+class AIError extends Error { constructor(msg, userMessage) { super(msg); this.userMessage = userMessage; } }
+
+// Claude: web search for current info, then the structured plan tool
+async function callClaude(env, messages) {
+  let data, convo = messages;
   for (let round = 0; round < 4; round++) {
-    resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: {'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01'},
       body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 8000,
-        system: SYSTEM_PROMPT,
-        messages: convo,
-        tools: [
-          {type: 'web_search_20250305', name: 'web_search', max_uses: 5},
-          PLAN_TOOL
-        ],
+        model: MODEL, max_tokens: 8000, system: SYSTEM_PROMPT + CLAUDE_EXTRA, messages: convo,
+        tools: [{type: 'web_search_20250305', name: 'web_search', max_uses: 5}, PLAN_TOOL],
         tool_choice: {type: 'auto'}
       })
     });
     data = await resp.json();
-    if (!resp.ok) {
-      const msg = data && data.error && data.error.message || '';
-      return json({error: 'ai_error', message: 'שירות ה-AI החזיר שגיאה. נסו שוב בעוד דקה.', detail: msg.slice(0, 300)}, 502);
-    }
+    if (!resp.ok) throw new AIError((data && data.error && data.error.message) || ('HTTP ' + resp.status));
     // long searches can pause the turn; continue it
     if (data.stop_reason === 'pause_turn') { convo = [...convo, {role: 'assistant', content: data.content}]; continue; }
     break;
   }
-
   const toolUse = (data.content || []).find(b => b.type === 'tool_use' && b.name === 'create_trip_plan');
-  if (!toolUse) return json({error: 'no_plan', message: 'לא התקבלה תוכנית. נסו לנסח את הבקשה אחרת.'}, 502);
-  const plan = sanitizePlan(toolUse.input, days);
-  return json({plan, usage: data.usage || null});
+  return toolUse ? toolUse.input : null;
+}
+
+// Gemini: JSON output that follows the same schema (no web search on this path)
+async function callGemini(env, messages) {
+  const model = env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+  const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: 'POST',
+    headers: {'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY},
+    body: JSON.stringify({
+      systemInstruction: {parts: [{text: SYSTEM_PROMPT + GEMINI_EXTRA}]},
+      contents: messages.map(m => ({role: m.role === 'assistant' ? 'model' : 'user', parts: [{text: m.content}]})),
+      generationConfig: {responseMimeType: 'application/json', responseJsonSchema: PLAN_TOOL.input_schema, maxOutputTokens: 12000}
+    })
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    const msg = (data.error && data.error.message) || ('HTTP ' + resp.status);
+    if (resp.status === 429) throw new AIError(msg, 'נגמרה המכסה החינמית של Gemini לעכשיו. נסו שוב מאוחר יותר.');
+    if (resp.status === 404) throw new AIError(msg, 'המודל של Gemini לא נמצא. בדקו את GEMINI_MODEL.');
+    throw new AIError(msg);
+  }
+  const cand = data.candidates && data.candidates[0];
+  const text = cand && cand.content && (cand.content.parts || []).map(p => p.text || '').join('');
+  if (!text) throw new AIError('empty response' + (cand && cand.finishReason ? ' (' + cand.finishReason + ')' : ''));
+  try { return JSON.parse(text); }
+  catch { throw new AIError('invalid JSON from model', 'התשובה מ-Gemini נקטעה. נסו שוב, או בקשו פחות ימים.'); }
 }
 
 function sanitizePlan(p, days) {
@@ -142,11 +172,11 @@ function sanitizePlan(p, days) {
 }
 
 const SYSTEM_PROMPT = `You are the trip planner inside a Hebrew travel-planning website for Israeli travelers flying from Tel Aviv.
-Build a realistic, day-by-day plan and return it ONLY by calling the create_trip_plan tool.
+Build a realistic, day-by-day plan.
 
 Rules:
 - All user-facing text (titles, descriptions, tips, reply) in natural Hebrew. Place names may include the local/English name in parentheses.
-- Use real, well-known places. When unsure whether a place is still open or what it costs, use web_search to check. Do not invent places.
+- Use real, well-known places. Do not invent places.
 - Group each day geographically to limit travel time. Keep a humane pace: 3-5 main stops a day plus meals.
 - Include markets, lunch and dinner suggestions every day (kind "market", "restaurant" or "cafe"). Prefer places with a good local reputation over tourist traps.
 - price_per_person is a typical adult entry price or meal cost, as an estimate. Use 0 for free places.
@@ -154,6 +184,14 @@ Rules:
 - airport_code is the IATA code of the main airport (for example LHR for London). lat/lon are the city center.
 - First and last day: account for flight arrival/departure with a lighter schedule.
 - If the user asks for a change, return the full updated plan, and in "reply" say briefly in Hebrew what changed.`;
+
+const CLAUDE_EXTRA = `
+- Return the plan ONLY by calling the create_trip_plan tool.
+- When unsure whether a place is still open or what it costs, use web_search to check.`;
+
+const GEMINI_EXTRA = `
+- Return only the JSON object that matches the schema.
+- You cannot browse the web: prefer long-established, well-known places, and avoid places you are not confident still operate.`;
 
 const PLAN_TOOL = {
   name: 'create_trip_plan',

@@ -11,6 +11,7 @@
   },
   "vars": {
     // same values as public/config.js (both are safe to publish)
+      "AI_PROVIDER": "gemini",
     "SUPABASE_URL": "https://kbtzuhklkkadkuohrlon.supabase.co",
     "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtidHp1aGtsa2thZGt1b2hybG9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2OTk3MjIsImV4cCI6MjEwNjI3NTcyMn0.LATI_Pmkf-LLmEtEbexS8SCEnmpWo0VSNil0WRkefTI"
   }

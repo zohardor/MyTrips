@@ -6,12 +6,14 @@
 //   AI_PROVIDER         "gemini" or "claude" (set in wrangler.jsonc)
 //   GEMINI_API_KEY      secret, from aistudio.google.com (free tier)
 //   GEMINI_MODEL        optional, defaults to GEMINI_DEFAULT_MODEL below
+//   GEMINI_FALLBACK_MODEL optional, used when the main model is busy or out of quota
 //   ANTHROPIC_API_KEY   secret, from console.anthropic.com (paid)
 //   SUPABASE_URL        plain variable (also set in wrangler.jsonc)
 //   SUPABASE_ANON_KEY   plain variable (also set in wrangler.jsonc)
 
 const MODEL = 'claude-sonnet-5-5';
 const GEMINI_DEFAULT_MODEL = 'gemini-flash-latest';
+const GEMINI_FALLBACK_MODEL = 'gemini-flash-lite-latest';
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'CZK', 'HUF', 'ILS'];
 
 export default {
@@ -102,7 +104,7 @@ async function callClaude(env, messages) {
       method: 'POST',
       headers: {'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01'},
       body: JSON.stringify({
-        model: MODEL, max_tokens: 8000, system: SYSTEM_PROMPT + CLAUDE_EXTRA, messages: convo,
+        model: MODEL, max_tokens: 14000, system: SYSTEM_PROMPT + CLAUDE_EXTRA, messages: convo,
         tools: [{type: 'web_search_20250305', name: 'web_search', max_uses: 5}, PLAN_TOOL],
         tool_choice: {type: 'auto'}
       })
@@ -117,30 +119,45 @@ async function callClaude(env, messages) {
   return toolUse ? toolUse.input : null;
 }
 
-// Gemini: JSON output that follows the same schema (no web search on this path)
+// Gemini: JSON output that follows the same schema (no web search on this path).
+// The free tier is often busy (HTTP 503 "high demand"), so: retry with backoff, then fall back to a lighter model.
 async function callGemini(env, messages) {
-  const model = env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
-  const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-    method: 'POST',
-    headers: {'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY},
-    body: JSON.stringify({
-      systemInstruction: {parts: [{text: SYSTEM_PROMPT + GEMINI_EXTRA}]},
-      contents: messages.map(m => ({role: m.role === 'assistant' ? 'model' : 'user', parts: [{text: m.content}]})),
-      generationConfig: {responseMimeType: 'application/json', responseJsonSchema: PLAN_TOOL.input_schema, maxOutputTokens: 12000}
-    })
+  const models = [env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL, env.GEMINI_FALLBACK_MODEL || GEMINI_FALLBACK_MODEL]
+    .filter((m, i, arr) => m && arr.indexOf(m) === i);
+  const body = JSON.stringify({
+    systemInstruction: {parts: [{text: SYSTEM_PROMPT + GEMINI_EXTRA}]},
+    contents: messages.map(m => ({role: m.role === 'assistant' ? 'model' : 'user', parts: [{text: m.content}]})),
+    generationConfig: {responseMimeType: 'application/json', responseJsonSchema: PLAN_TOOL.input_schema, maxOutputTokens: 16000}
   });
-  const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    const msg = (data.error && data.error.message) || ('HTTP ' + resp.status);
-    if (resp.status === 429) throw new AIError(msg, 'נגמרה המכסה החינמית של Gemini לעכשיו. נסו שוב מאוחר יותר.');
-    if (resp.status === 404) throw new AIError(msg, 'המודל של Gemini לא נמצא. בדקו את GEMINI_MODEL.');
-    throw new AIError(msg);
+  let lastErr = null;
+  for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await new Promise(r => setTimeout(r, attempt * 2000 + Math.random() * 1000));
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+        method: 'POST', headers: {'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY}, body
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok) {
+        const cand = data.candidates && data.candidates[0];
+        const text = cand && cand.content && (cand.content.parts || []).map(p => p.text || '').join('');
+        if (!text) { lastErr = new AIError('empty response' + (cand && cand.finishReason ? ' (' + cand.finishReason + ')' : '')); continue; }
+        try { return JSON.parse(text); }
+        catch { lastErr = new AIError('invalid JSON from ' + model, 'התשובה מ-Gemini נקטעה. נסו שוב, או בקשו פחות ימים.'); continue; }
+      }
+      const msg = (data.error && data.error.message) || ('HTTP ' + resp.status);
+      if (resp.status === 503 || resp.status === 500) {          // busy: retry, then next model
+        lastErr = new AIError(msg, 'Gemini עמוס כרגע. נסו שוב בעוד כמה דקות.');
+        continue;
+      }
+      if (resp.status === 429) {                                 // quota for this model: try the next one
+        lastErr = new AIError(msg, 'נגמרה המכסה החינמית של Gemini לעכשיו. נסו שוב מאוחר יותר.');
+        break;
+      }
+      if (resp.status === 404) { lastErr = new AIError(msg, 'המודל של Gemini לא נמצא. בדקו את GEMINI_MODEL.'); break; }
+      throw new AIError(msg);                                    // anything else: don't hammer the API
+    }
   }
-  const cand = data.candidates && data.candidates[0];
-  const text = cand && cand.content && (cand.content.parts || []).map(p => p.text || '').join('');
-  if (!text) throw new AIError('empty response' + (cand && cand.finishReason ? ' (' + cand.finishReason + ')' : ''));
-  try { return JSON.parse(text); }
-  catch { throw new AIError('invalid JSON from model', 'התשובה מ-Gemini נקטעה. נסו שוב, או בקשו פחות ימים.'); }
+  throw lastErr || new AIError('Gemini failed');
 }
 
 function sanitizePlan(p, days) {
@@ -167,7 +184,49 @@ function sanitizePlan(p, days) {
       }))
     })),
     daily_food_budget: isFinite(p.daily_food_budget_per_person) ? Math.max(0, +p.daily_food_budget_per_person) : null,
+    daily_transport: isFinite(p.daily_transport_per_person) ? Math.max(0, +p.daily_transport_per_person) : null,
+    saving_tips: (Array.isArray(p.saving_tips) ? p.saving_tips : []).slice(0, 6).map(s),
+    flights: sanitizeFlights(p.flights),
+    hotels: sanitizeHotels(p.hotels, days),
     tips: (Array.isArray(p.tips) ? p.tips : []).slice(0, 8).map(s)
+  };
+}
+
+const num = v => (isFinite(v) && +v >= 0 ? +v : 0);
+const range = r => {
+  const a = num(r && r.min), b = num(r && r.max);
+  return {min: Math.min(a, b || a), max: Math.max(a, b)};
+};
+function sanitizeFlights(f) {
+  f = f || {};
+  return {
+    currency: CURRENCIES.includes(f.currency) ? f.currency : 'USD',
+    options: (Array.isArray(f.options) ? f.options : []).slice(0, 5).map(o => ({
+      label: String(o.label ?? '').slice(0, 120),
+      airlines: (Array.isArray(o.airlines) ? o.airlines : []).slice(0, 5).map(a => String(a).slice(0, 60)),
+      stops: Math.min(3, Math.max(0, parseInt(o.stops, 10) || 0)),
+      duration_hours: num(o.duration_hours),
+      price: range(o.round_trip_price_per_person),
+      note: String(o.note ?? '').slice(0, 300)
+    })).filter(o => o.label && o.price.max > 0),
+    note: String(f.note ?? '').slice(0, 300)
+  };
+}
+function sanitizeHotels(h, days) {
+  h = h || {};
+  return {
+    currency: CURRENCIES.includes(h.currency) ? h.currency : 'EUR',
+    areas: (Array.isArray(h.areas) ? h.areas : []).slice(0, 5).map(a => ({
+      name: String(a.name ?? '').slice(0, 80),
+      why: String(a.why ?? '').slice(0, 300),
+      near_days: (Array.isArray(a.near_days) ? a.near_days : []).map(n => parseInt(n, 10)).filter(n => n >= 1 && n <= days).slice(0, days),
+      hotels: (Array.isArray(a.hotels) ? a.hotels : []).slice(0, 4).map(x => ({
+        name: String(x.name ?? '').slice(0, 120),
+        level: ['budget', 'mid', 'luxury'].includes(x.level) ? x.level : 'mid',
+        price: range(x.price_per_night),
+        note: String(x.note ?? '').slice(0, 200)
+      })).filter(x => x.name && x.price.max > 0)
+    })).filter(a => a.name && a.hotels.length)
   };
 }
 
@@ -183,7 +242,17 @@ Rules:
 - All prices use ONE currency: the local currency if it is EUR, USD, GBP, CZK or HUF; otherwise USD. Put it in destination.price_currency.
 - airport_code is the IATA code of the main airport (for example LHR for London). lat/lon are the city center.
 - First and last day: account for flight arrival/departure with a lighter schedule.
-- If the user asks for a change, return the full updated plan, and in "reply" say briefly in Hebrew what changed.`;
+- If the user asks for a change, return the full updated plan, and in "reply" say briefly in Hebrew what changed.
+
+Flights (flights): 2-4 realistic options from Tel Aviv (Ben Gurion, TLV) to the destination for the trip month.
+- Include direct options only on routes that really have direct flights, naming the airlines that operate them. Add one-stop options when they are typically cheaper.
+- round_trip_price_per_person is a typical economy round-trip range in USD for that season. These are estimates; the site tells users to check live prices.
+
+Hotels (hotels): 3-4 neighborhoods that suit THIS itinerary, each with "why" in Hebrew and near_days listing the plan days it is closest to.
+- For each neighborhood list 3-4 long-established, well-known hotels across levels (budget / mid / luxury). Prefer stable hotels and chains over small new places.
+- price_per_night is a typical range for a standard double room in the trip month, in hotels.currency (the same currency as destination.price_currency).
+
+Budget: daily_food_budget_per_person and daily_transport_per_person (local transport) in destination.price_currency, plus 3-5 concrete saving_tips in Hebrew.`;
 
 const CLAUDE_EXTRA = `
 - Return the plan ONLY by calling the create_trip_plan tool.
@@ -198,7 +267,7 @@ const PLAN_TOOL = {
   description: 'Return the complete trip plan to the website.',
   input_schema: {
     type: 'object',
-    required: ['destination', 'summary', 'days', 'reply'],
+    required: ['destination', 'summary', 'days', 'reply', 'flights', 'hotels', 'daily_food_budget_per_person', 'daily_transport_per_person'],
     properties: {
       destination: {
         type: 'object',
@@ -213,6 +282,63 @@ const PLAN_TOOL = {
       summary: {type: 'string', description: 'Two or three Hebrew sentences describing the trip'},
       reply: {type: 'string', description: 'Short Hebrew chat reply to the user'},
       daily_food_budget_per_person: {type: 'number', description: 'Typical daily food spend per person, in price_currency'},
+      daily_transport_per_person: {type: 'number', description: 'Typical daily local transport per person, in price_currency'},
+      saving_tips: {type: 'array', items: {type: 'string'}},
+      flights: {
+        type: 'object',
+        required: ['currency', 'options'],
+        properties: {
+          currency: {type: 'string', enum: CURRENCIES},
+          note: {type: 'string', description: 'Short Hebrew note about flights on this route'},
+          options: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['label', 'airlines', 'stops', 'round_trip_price_per_person'],
+              properties: {
+                label: {type: 'string', description: 'Hebrew, e.g. "טיסה ישירה בחברה מסורתית"'},
+                airlines: {type: 'array', items: {type: 'string'}},
+                stops: {type: 'integer'},
+                duration_hours: {type: 'number', description: 'One-way flight time'},
+                round_trip_price_per_person: {type: 'object', required: ['min', 'max'], properties: {min: {type: 'number'}, max: {type: 'number'}}},
+                note: {type: 'string'}
+              }
+            }
+          }
+        }
+      },
+      hotels: {
+        type: 'object',
+        required: ['currency', 'areas'],
+        properties: {
+          currency: {type: 'string', enum: CURRENCIES},
+          areas: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['name', 'why', 'hotels'],
+              properties: {
+                name: {type: 'string', description: 'Neighborhood name'},
+                why: {type: 'string', description: 'One Hebrew sentence'},
+                near_days: {type: 'array', items: {type: 'integer'}},
+                hotels: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['name', 'level', 'price_per_night'],
+                    properties: {
+                      name: {type: 'string'},
+                      level: {type: 'string', enum: ['budget', 'mid', 'luxury']},
+                      price_per_night: {type: 'object', required: ['min', 'max'], properties: {min: {type: 'number'}, max: {type: 'number'}}},
+                      note: {type: 'string', description: 'Short Hebrew note'}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       days: {
         type: 'array',
         items: {

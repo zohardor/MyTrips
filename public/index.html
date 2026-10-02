@@ -284,7 +284,7 @@ body[data-role="owner"] .member-only{display:none !important}
 .ai-status.busy::before{content:"";display:inline-block;width:10px;height:10px;margin-inline-end:8px;border-radius:50%;background:var(--red);animation:pulse 1s ease-in-out infinite alternate}
 @keyframes pulse{to{opacity:.25}}
 .ai-status.err{color:var(--red)}
-.ai-plan{border-top:1px solid var(--line);padding-top:14px;max-height:52vh;overflow:auto}
+.ai-plan{border-top:1px solid var(--line);padding:14px 2px 0 10px;max-height:52vh;overflow:auto}
 .ai-sum{margin:0 0 12px}
 .ai-reply{background:var(--soft);border-radius:var(--r-ctl);padding:8px 12px;margin:0 0 12px;font-size:.95rem}
 .ai-day{margin-bottom:14px}
@@ -297,7 +297,32 @@ body[data-role="owner"] .member-only{display:none !important}
 .ai-item .ds{grid-column:2/4;color:var(--muted)}
 .ai-item .pr{white-space:nowrap;color:var(--muted)}
 .ai-tips{margin:6px 0 0;padding-inline-start:18px;color:var(--muted);font-size:.93rem}
+.ai-sec{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:14px}
+.ai-sec > h4{font-size:1.05rem;margin:0 0 8px}
+.ai-budget{display:grid;grid-template-columns:200px minmax(0,1fr);gap:18px;align-items:center;margin-bottom:8px}
+.ai-budget > div{min-width:0}
+.ai-budget .legend{list-style:none;margin:0;padding:0}
+.ai-budget .legend li{display:grid;grid-template-columns:12px 1fr auto 3em;gap:8px;align-items:center;padding:3px 0;font-size:.94rem}
+.ai-budget .dot{width:12px;height:12px;border-radius:3px}
+.ai-budget .pct{color:var(--muted);text-align:end}
+.ai-opts{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.ai-opt{display:grid;grid-template-columns:20px 1fr auto;gap:10px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-ctl);cursor:pointer;background:var(--card)}
+.ai-opt:hover{border-color:var(--grid)}
+.ai-opt.on{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.ai-opt input{margin-top:4px;accent-color:var(--red)}
+.ai-opt .o-main{display:flex;flex-direction:column;gap:1px}
+.ai-opt .o-price{text-align:end;font-weight:600;white-space:nowrap}
+.ai-opt .o-price small{display:block;font-weight:400;color:var(--muted);font-size:.8rem}
+.ai-opt .o-link{font-size:.86rem;color:var(--blue);align-self:flex-start}
+.lvl{font-size:.75rem;font-weight:600;padding:0 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);align-self:flex-start;margin:2px 0}
+.lvl-luxury{border-color:var(--amber);color:var(--amber)}
+.lvl-budget{border-color:var(--green);color:var(--green)}
+.ai-area{margin-top:12px}
+.a-head{display:flex;gap:10px;align-items:baseline}
+.ai-area > p{margin:2px 0 4px}
+.ai-links{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .ai-refine{display:flex;gap:8px}
+@media (max-width:720px){ .ai-budget{grid-template-columns:1fr} }
 .ai-refine input{flex:1}
 .ai-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
 @media (max-width:720px){ .ai-row{grid-template-columns:1fr 1fr} .ai-row .btn{grid-column:1/-1} .ai-refine{flex-direction:column} }
@@ -1706,7 +1731,7 @@ function initShare(){
 /* ================================================================
    AI planner (prototype, admins only). Talks to /api/ai-plan on our Worker.
    ================================================================ */
-let ai = {plan: null, history: []};
+let ai = {plan: null, history: [], sel: null};
 const KIND = {attraction: 'אטרקציה', market: 'שוק', restaurant: 'מסעדה', cafe: 'בית קפה', walk: 'הליכה', other: ''};
 function aiStatus(t, kind){ const el = $('#ai-status'); el.textContent = t || ''; el.className = 'ai-status ' + (kind || ''); }
 async function aiCall(request){
@@ -1720,7 +1745,7 @@ async function aiCall(request){
   });
   let out = {};
   try { out = await res.json(); } catch(e) {}
-  if (!res.ok) throw new Error(out.message || (res.status === 404 ? 'שירות ה-AI עדיין לא פרוס ב-Worker.' : 'הבקשה נכשלה.'));
+  if (!res.ok) throw new Error((out.message || (res.status === 404 ? 'שירות ה-AI עדיין לא פרוס ב-Worker.' : 'הבקשה נכשלה.')) + (out.detail ? ' (' + out.detail + ')' : ''));
   return out.plan;
 }
 async function aiRun(request, isChange){
@@ -1734,6 +1759,11 @@ async function aiRun(request, isChange){
     if (!isChange) ai.history = [];
     ai.history.push({role: 'user', text: request});
     if (plan.reply) ai.history.push({role: 'assistant', text: plan.reply});
+    if (!isChange || !ai.sel) ai.sel = defaultSelection(plan);
+    else {
+      if (ai.sel.flight >= plan.flights.options.length) ai.sel.flight = plan.flights.options.length ? 0 : -1;
+      if (ai.sel.hotel && !(plan.hotels.areas[ai.sel.hotel[0]] && plan.hotels.areas[ai.sel.hotel[0]].hotels[ai.sel.hotel[1]])) ai.sel.hotel = defaultSelection(plan).hotel;
+    }
     ai.plan = plan;
     aiStatus('');
     renderAiPlan();
@@ -1741,42 +1771,157 @@ async function aiRun(request, isChange){
   } catch(e) { aiStatus(e.message || 'הבקשה נכשלה. נסו שוב.', 'err'); }
   finally { btns.forEach(b => b.disabled = false); }
 }
+const LEVEL = {budget: 'חסכוני', mid: 'בינוני', luxury: 'יוקרתי'};
+const mid = r => r ? (r.min + r.max) / 2 : 0;
+const toILS = (v, c) => v * (c === 'ILS' ? 1 : (DEFAULT_RATES[c] || 0));
+function aiTrip(){
+  const days = Math.max(1, ai.plan ? ai.plan.days.length : 1);
+  const travelers = Math.max(1, parseInt($('#ai-trav').value, 10) || 2);
+  const from = $('#ai-date').value;
+  const to = from ? iso(addDays(new Date(from), days - 1)) : '';
+  return {days, nights: Math.max(0, days - 1), travelers, rooms: Math.ceil(travelers / 2), from, to};
+}
+function defaultSelection(p){
+  const sel = {flight: p.flights.options.length ? 0 : -1, hotel: null};
+  for (let a = 0; a < p.hotels.areas.length && !sel.hotel; a++) {
+    const h = p.hotels.areas[a].hotels.findIndex(x => x.level === 'mid');
+    if (h >= 0) sel.hotel = [a, h];
+  }
+  if (!sel.hotel && p.hotels.areas.length) sel.hotel = [0, 0];
+  return sel;
+}
+// per-person estimate in ILS for each part of the trip
+function aiBudget(){
+  const p = ai.plan, t = aiTrip(), cur = p.destination.currency;
+  const fl = p.flights.options[ai.sel.flight];
+  const area = ai.sel.hotel && p.hotels.areas[ai.sel.hotel[0]];
+  const ho = area && area.hotels[ai.sel.hotel[1]];
+  let attr = 0;
+  p.days.forEach(d => d.items.forEach(it => { if (!['restaurant','cafe'].includes(it.kind)) attr += it.price || 0; }));
+  const rows = [
+    {k: 'flight', n: 'טיסה', v: fl ? toILS(mid(fl.price), p.flights.currency) : 0, c: 'var(--blue)'},
+    {k: 'hotel', n: 'לינה', v: ho ? toILS(mid(ho.price) * t.nights * t.rooms / t.travelers, p.hotels.currency) : 0, c: 'var(--red)'},
+    {k: 'attr', n: 'אטרקציות', v: toILS(attr, cur), c: 'var(--amber)'},
+    {k: 'food', n: 'אוכל', v: toILS((p.daily_food_budget || 0) * t.days, cur), c: 'var(--green)'},
+    {k: 'transport', n: 'תחבורה מקומית', v: toILS((p.daily_transport || 0) * t.days, cur), c: 'var(--violet)'}
+  ];
+  return {rows, total: rows.reduce((x, r) => x + r.v, 0), t};
+}
+function flightLinks(){
+  const p = ai.plan, t = aiTrip(), code = p.destination.code || '';
+  const yymmdd = d => d.slice(2).replace(/-/g, '');
+  const q = `Flights from TLV to ${code || p.destination.city}${t.from ? ' on ' + t.from + ' through ' + t.to : ''}`;
+  const g = 'https://www.google.com/travel/flights?hl=iw&q=' + encodeURIComponent(q);
+  const sk = code ? `https://www.skyscanner.co.il/transport/flights/tlv/${code.toLowerCase()}/${t.from ? yymmdd(t.from) + '/' + yymmdd(t.to) + '/' : ''}?adultsv2=${t.travelers}` : '';
+  return {g, sk};
+}
+function bookingLink(hotelName){
+  const p = ai.plan, t = aiTrip();
+  const u = new URL('https://www.booking.com/searchresults.html');
+  u.searchParams.set('ss', hotelName + ', ' + p.destination.city);
+  if (t.from) { u.searchParams.set('checkin', t.from); u.searchParams.set('checkout', iso(addDays(new Date(t.from), Math.max(1, t.nights)))); }
+  u.searchParams.set('group_adults', t.travelers); u.searchParams.set('no_rooms', t.rooms); u.searchParams.set('lang', 'he');
+  return u.toString();
+}
 function renderAiPlan(){
   const p = ai.plan; if (!p) return;
+  if (!ai.sel) ai.sel = defaultSelection(p);
   const cur = p.destination.currency || 'EUR';
   const start = Date.parse($('#ai-date').value);
   const dayFmt = new Intl.DateTimeFormat('he-IL', {weekday: 'long', day: 'numeric', month: 'numeric'});
+  const n0 = v => Math.round(v).toLocaleString('en-US');
+  const rng = (r, c) => `<bdi dir="ltr">${CUR_SYM[c] || c}${r.min === r.max ? n0(r.max) : n0(r.min) + '–' + n0(r.max)}</bdi>`;
+  const B = aiBudget(), L = flightLinks();
   $('#ai-plan').innerHTML = `
     ${ai.history.length > 2 && p.reply ? `<p class="ai-reply">${esc(p.reply)}</p>` : ''}
     <h3>${esc(p.destination.city)}${p.destination.country ? ', ' + esc(p.destination.country) : ''}</h3>
     <p class="ai-sum">${esc(p.summary)}</p>
-    ${p.days.map(d => `<div class="ai-day"><h4>יום ${d.day}: ${esc(d.title)} <small>${isNaN(start) ? '' : esc(dayFmt.format(new Date(start + (d.day - 1) * 864e5)))}</small></h4>
-      ${d.items.map(it => `<div class="ai-item">
-        <time>${esc(it.time)}</time>
-        <span><span class="nm">${it.url ? `<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.name)}</a>` : esc(it.name)}</span><span class="kind">${KIND[it.kind] || ''}</span>${it.area ? ` <span class="hint">${esc(it.area)}</span>` : ''}</span>
-        <span class="pr num">${it.price ? fmt(it.price, cur) : (['attraction','walk','market'].includes(it.kind) ? 'חינם' : '')}</span>
-        <span class="ds">${esc(it.description)}</span></div>`).join('')}</div>`).join('')}
-    ${p.tips && p.tips.length ? `<h4>טיפים</h4><ul class="ai-tips">${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}`;
+
+    <section class="ai-sec">
+      <h4>תקציב משוער</h4>
+      <div class="ai-budget">
+        <div><div class="big num">${fmt(B.total, 'ILS')}</div><div class="hint">לנוסע, ${fmt(B.total * B.t.travelers, 'ILS')} לכל ${B.t.travelers === 1 ? 'הטיול' : B.t.travelers + ' הנוסעים'}</div></div>
+        <div>
+          <div class="bar">${B.total > 0 ? B.rows.filter(r => r.v > 0).map(r => `<i style="width:${r.v / B.total * 100}%;background:${r.c}"></i>`).join('') : ''}</div>
+          <ul class="legend">${B.rows.map(r => `<li><span class="dot" style="background:${r.c}"></span><span>${r.n}</span><span class="num">${fmt(r.v, 'ILS')}</span><span class="pct">${B.total ? Math.round(r.v / B.total * 100) : 0}%</span></li>`).join('')}</ul>
+        </div>
+      </div>
+      <p class="hint">הסכומים לנוסע, לפי הטיסה והמלון שנבחרו למטה, ${B.t.nights} לילות ו־${B.t.rooms === 1 ? 'חדר אחד' : B.t.rooms + ' חדרים'}. השקלים לפי שערים משוערים.</p>
+      ${p.saving_tips.length ? `<ul class="ai-tips">${p.saving_tips.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    </section>
+
+    <section class="ai-sec">
+      <h4>טיסות</h4>
+      ${p.flights.note ? `<p class="hint">${esc(p.flights.note)}</p>` : ''}
+      <div class="ai-opts">${p.flights.options.map((o, i) => `
+        <label class="ai-opt ${ai.sel.flight === i ? 'on' : ''}">
+          <input type="radio" name="ai-flight" value="${i}" class="keep" ${ai.sel.flight === i ? 'checked' : ''}>
+          <span class="o-main"><b>${esc(o.label)}</b>
+            <span class="hint">${esc(o.airlines.join(', '))}${o.airlines.length ? ', ' : ''}${o.stops ? (o.stops === 1 ? 'עצירה אחת' : o.stops + ' עצירות') : 'ישירה'}${o.duration_hours ? `, כ־${Math.round(o.duration_hours * 2) / 2} שעות לכיוון` : ''}</span>
+            ${o.note ? `<span class="hint">${esc(o.note)}</span>` : ''}</span>
+          <span class="o-price num">${rng(o.price, p.flights.currency)}<small>הלוך־חזור לנוסע</small></span>
+        </label>`).join('')}</div>
+      <div class="ai-links">
+        <a class="btn ghost small" href="${esc(L.g)}" target="_blank" rel="noopener">חיפוש ב-Google Flights</a>
+        ${L.sk ? `<a class="btn ghost small" href="${esc(L.sk)}" target="_blank" rel="noopener">חיפוש ב-Skyscanner</a>` : ''}
+        <span class="hint">המחירים כאן הם טווח טיפוסי לעונה. את המחיר האמיתי בודקים באתר.</span>
+      </div>
+    </section>
+
+    <section class="ai-sec">
+      <h4>מלונות לפי אזור</h4>
+      <p class="hint">מחיר ממוצע משוער ללילה בחדר זוגי, בחודש של הטיול. המחיר בפועל משתנה, ואת הזמינות בודקים באתר ההזמנות.</p>
+      ${p.hotels.areas.map((a, ai_) => `<div class="ai-area">
+        <div class="a-head"><b>${esc(a.name)}</b>${a.near_days.length ? `<span class="hint">קרוב לימים ${a.near_days.join(', ')}</span>` : ''}</div>
+        <p class="hint">${esc(a.why)}</p>
+        <div class="ai-opts">${a.hotels.map((h, hi) => { const on = ai.sel.hotel && ai.sel.hotel[0] === ai_ && ai.sel.hotel[1] === hi; return `
+          <label class="ai-opt ${on ? 'on' : ''}">
+            <input type="radio" name="ai-hotel" value="${ai_}:${hi}" class="keep" ${on ? 'checked' : ''}>
+            <span class="o-main"><b>${esc(h.name)}</b><span class="lvl lvl-${h.level}">${LEVEL[h.level]}</span>
+              ${h.note ? `<span class="hint">${esc(h.note)}</span>` : ''}
+              <a class="o-link" href="${esc(bookingLink(h.name))}" target="_blank" rel="noopener">לבדיקה ב-Booking</a></span>
+            <span class="o-price num">${rng(h.price, p.hotels.currency)}<small>ללילה</small></span>
+          </label>`; }).join('')}</div>
+      </div>`).join('')}
+    </section>
+
+    <section class="ai-sec">
+      <h4>התוכנית לפי ימים</h4>
+      ${p.days.map(d => `<div class="ai-day"><h4>יום ${d.day}: ${esc(d.title)} <small>${isNaN(start) ? '' : esc(dayFmt.format(new Date(start + (d.day - 1) * 864e5)))}</small></h4>
+        ${d.items.map(it => `<div class="ai-item">
+          <time>${esc(it.time)}</time>
+          <span><span class="nm">${it.url ? `<a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.name)}</a>` : esc(it.name)}</span><span class="kind">${KIND[it.kind] || ''}</span>${it.area ? ` <span class="hint">${esc(it.area)}</span>` : ''}</span>
+          <span class="pr num">${it.price ? fmt(it.price, cur) : (['attraction','walk','market'].includes(it.kind) ? 'חינם' : '')}</span>
+          <span class="ds">${esc(it.description)}</span></div>`).join('')}</div>`).join('')}
+      ${p.tips && p.tips.length ? `<h4>טיפים</h4><ul class="ai-tips">${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    </section>`;
   $('#ai-plan').hidden = false; $('#ai-refine').hidden = false; $('#ai-actions').hidden = false;
 }
 function stateFromPlan(p){
   const st = defaults();
-  const dest = p.destination;
+  const dest = p.destination, t = aiTrip();
   const known = Object.keys(DESTS).find(k => k !== 'OTHER' && (k === dest.code || DESTS[k].name === dest.city));
   if (known) st.dest = known;
   else { st.dest = 'OTHER'; st.custom = dest.city; st.geo = {code: dest.code, lat: dest.lat, lon: dest.lon, country: dest.country}; }
-  const from = $('#ai-date').value || st.from;
-  st.from = from;
-  st.to = iso(addDays(new Date(from), Math.max(1, p.days.length) - 1));
-  st.travelers = Math.max(1, parseInt($('#ai-trav').value, 10) || 2);
+  st.from = t.from || st.from;
+  st.to = iso(addDays(new Date(st.from), t.days - 1));
+  st.travelers = t.travelers;
   const cur = dest.currency || 'EUR';
-  const nice = v => v >= 1000 ? Math.round(v/100)*100 : v >= 100 ? Math.round(v/10)*10 : Math.round(v);
+  const keep = st.items.filter(it => ['other'].includes(it.cat) || (it.cat === 'transport' && it.per === 'total'));
+  st.items = keep;
+  // airport transfer default in the destination currency
   st.items.forEach(it => {
-    if (!['hotel','food','transport'].includes(it.cat) || it.cur === cur || !DEFAULT_RATES[cur]) return;
-    it.amount = nice(it.amount * DEFAULT_RATES[it.cur] / DEFAULT_RATES[cur]); it.cur = cur;
+    if (it.cat === 'transport' && it.cur !== cur && DEFAULT_RATES[cur]) { it.amount = Math.round(it.amount * DEFAULT_RATES[it.cur] / DEFAULT_RATES[cur] / 10) * 10; it.cur = cur; }
   });
-  const food = st.items.find(it => it.cat === 'food');
-  if (food && p.daily_food_budget) { food.amount = Math.round(p.daily_food_budget); food.cur = cur; }
+  const fl = p.flights.options[ai.sel.flight];
+  st.items.push({id: uid(), cat: 'flight', name: fl ? 'טיסה: ' + fl.label + (fl.airlines.length ? ' (' + fl.airlines.join(', ') + ')' : '') : 'טיסה הלוך־חזור',
+    amount: fl ? Math.round(mid(fl.price)) : 450, cur: fl ? p.flights.currency : 'USD', per: 'person'});
+  const area = ai.sel.hotel && p.hotels.areas[ai.sel.hotel[0]];
+  const ho = area && area.hotels[ai.sel.hotel[1]];
+  st.items.push({id: uid(), cat: 'hotel', name: ho ? `${ho.name}, ${area.name}${t.rooms > 1 ? ' (' + t.rooms + ' חדרים)' : ''}` : 'מלון',
+    amount: ho ? Math.round(mid(ho.price) * t.rooms) : 150, cur: ho ? p.hotels.currency : 'EUR', per: 'night'});
+  if (p.daily_food_budget) st.items.push({id: uid(), cat: 'food', name: 'ארוחות ושתייה', amount: Math.round(p.daily_food_budget), cur, per: 'personDay'});
+  if (p.daily_transport) st.items.push({id: uid(), cat: 'transport', name: 'תחבורה ציבורית ומוניות', amount: Math.round(p.daily_transport), cur, per: 'personDay'});
   p.days.forEach(d => {
     const lines = [];
     if (d.title) lines.push(d.title);
@@ -1787,7 +1932,8 @@ function stateFromPlan(p){
     });
     st.notes[d.day] = lines.join('\n');
   });
-  st.aiTips = p.tips || [];
+  // keep the hotel shortlist and saving tips with the trip for later
+  st.aiHotels = p.hotels; st.aiFlights = p.flights; st.aiTips = [...(p.saving_tips || []), ...(p.tips || [])];
   return st;
 }
 function initAI(){
@@ -1801,14 +1947,21 @@ function initAI(){
   $('#ai-close').addEventListener('click', close);
   modal.addEventListener('click', e => { if (e.target === modal) close(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) close(); });
-  $('#ai-form').addEventListener('submit', () => { ai = {plan: null, history: []}; aiRun($('#ai-req').value, false); });
+  $('#ai-form').addEventListener('submit', () => { ai = {plan: null, history: [], sel: null}; aiRun($('#ai-req').value, false); });
+  $('#ai-plan').addEventListener('change', e => {
+    if (e.target.name === 'ai-flight') ai.sel.flight = +e.target.value;
+    else if (e.target.name === 'ai-hotel') ai.sel.hotel = e.target.value.split(':').map(Number);
+    else return;
+    const y = $('#ai-plan').scrollTop; renderAiPlan(); $('#ai-plan').scrollTop = y;
+  });
+  ['#ai-trav', '#ai-date'].forEach(x => $(x).addEventListener('change', () => { if (ai.plan) { const y = $('#ai-plan').scrollTop; renderAiPlan(); $('#ai-plan').scrollTop = y; } }));
   $('#ai-refine').addEventListener('submit', () => aiRun($('#ai-change').value, true));
   $('#ai-create').addEventListener('click', async () => {
     if (!ai.plan) return;
     $('#ai-create').disabled = true;
     try {
       const id = await createTrip(stateFromPlan(ai.plan));
-      close(); ai = {plan: null, history: []};
+      close(); ai = {plan: null, history: [], sel: null};
       $('#ai-plan').hidden = $('#ai-refine').hidden = $('#ai-actions').hidden = true;
       openTrip(id); showTab('days');
       setStatus('הטיול נוצר מהתוכנית', 'ok');
